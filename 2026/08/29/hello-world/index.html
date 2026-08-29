@@ -1070,24 +1070,22 @@ document.addEventListener('DOMContentLoaded', function() {
       
 <div class="comments-container">
   <div class="comments-title">评论</div>
-  <div class="giscus-wrapper">
-    <script src="https://giscus.app/client.js"
-      data-repo="lkdenchin/hexo-blog-comments"
-      data-repo-id="R_kgDORXaOrA"
-      data-category="Announcements"
-      data-category-id="DIC_kwDORXaOrM4C3F8Y"
-      data-mapping="pathname"
-      data-strict="0"
-      data-reactions-enabled="1"
-      data-emit-metadata="1"
-      data-input-position="top"
-      data-theme="preferred_color_scheme"
-      data-lang="zh-CN"
-      data-loading="lazy"
-      crossorigin="anonymous"
-      async>
-    </script>
-  </div>
+  <div id="waline"></div>
+  <script>
+    (function() {
+      var waline = document.createElement('script');
+      waline.src = '//unpkg.com/@waline/client@v3/dist/waline.js';
+      waline.onload = function() {
+        Waline.init({
+          el: '#waline',
+          serverURL: 'https://comment.muyudada.dpdns.org/',
+          lang: 'zh-CN',
+          dark: 'html.dark'
+        });
+      };
+      document.head.appendChild(waline);
+    })();
+  </script>
 </div>
 
 
@@ -1726,7 +1724,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <span class="material-symbols-outlined">schedule</span>
           </div>
           <div class="site-info-card-label">构建时间</div>
-          <div class="site-info-card-value">2026/8/29 17:07:31</div>
+          <div class="site-info-card-value">2026/8/30 00:14:15</div>
         </div>
 
         <!-- System Info -->
@@ -2145,7 +2143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <span class="material-symbols-outlined">schedule</span>
           </div>
           <div class="site-info-card-label">构建时间</div>
-          <div class="site-info-card-value">2026/8/29 17:07:31</div>
+          <div class="site-info-card-value">2026/8/30 00:14:15</div>
         </div>
 
         <!-- System Info -->
@@ -2472,6 +2470,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 <!-- Character Models - Live2D / Spine -->
+
+  
+  <!-- Spine Player -->
+  <link rel="stylesheet" href="/pio/static/spine-player.min.css">
+  <script src="/pio/static/spine-player.min.js"></script>
+  <div id="spine-player-container" style="position: fixed; bottom: 20px; left: 20px; width: 280px; height: 400px; z-index: 45; pointer-events: none;"></div>
+  <script>
+    (function() {
+      function initSpine() {
+        if (typeof spine === 'undefined' || typeof spine.SpinePlayer === 'undefined') {
+          setTimeout(initSpine, 100);
+          return;
+        }
+        var container = document.getElementById('spine-player-container');
+        if (!container) return;
+        var jsonPath = '/pio/models/spine/firefly/1310.json';
+        var atlasPath = jsonPath.replace(/\.json$/, '.atlas');
+        new spine.SpinePlayer("spine-player-container", {
+          jsonUrl: jsonPath,
+          atlasUrl: atlasPath,
+          showControls: false,
+          backgroundColor: "#00000000",
+          alpha: true
+        });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSpine);
+      } else {
+        initSpine();
+      }
+    })();
+  </script>
+  
 
 
 <!-- APlayer / Meting - Music Player -->

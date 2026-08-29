@@ -862,6 +862,39 @@
 
 <!-- Character Models - Live2D / Spine -->
 
+  
+  <!-- Spine Player -->
+  <link rel="stylesheet" href="/pio/static/spine-player.min.css">
+  <script src="/pio/static/spine-player.min.js"></script>
+  <div id="spine-player-container" style="position: fixed; bottom: 20px; left: 20px; width: 280px; height: 400px; z-index: 45; pointer-events: none;"></div>
+  <script>
+    (function() {
+      function initSpine() {
+        if (typeof spine === 'undefined' || typeof spine.SpinePlayer === 'undefined') {
+          setTimeout(initSpine, 100);
+          return;
+        }
+        var container = document.getElementById('spine-player-container');
+        if (!container) return;
+        var jsonPath = '/pio/models/spine/firefly/1310.json';
+        var atlasPath = jsonPath.replace(/\.json$/, '.atlas');
+        new spine.SpinePlayer("spine-player-container", {
+          jsonUrl: jsonPath,
+          atlasUrl: atlasPath,
+          showControls: false,
+          backgroundColor: "#00000000",
+          alpha: true
+        });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSpine);
+      } else {
+        initSpine();
+      }
+    })();
+  </script>
+  
+
 
 <!-- APlayer / Meting - Music Player -->
 
