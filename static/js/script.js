@@ -16,12 +16,15 @@ var musicPlaylistConfig = {
     listMaxHeight: "180px"
 };
 
-// 和风天气配置：将 key 替换为控制台申请的 Web API Key。
+// Open-Meteo 配置无需 API Key。可按需修改默认城市或直接填写经纬度。
 var weatherConfig = {
-    key: "88ae3e30712d4c7ea92e8b8b209949fb",
     city: "石家庄",
-    api: "n27p3u5uhf.re.qweatherapi.com",
-    geoApi: "https://geoapi.qweather.com"
+    latitude: 38.0428,
+    longitude: 114.5149,
+    apiHost: "https://api.open-meteo.com",
+    airQualityApiHost: "https://air-quality-api.open-meteo.com",
+    geocodingApiHost: "https://geocoding-api.open-meteo.com",
+    ipApi: "https://v2.xxapi.cn/api/ip"
 };
 
 function updateLocalTime() {
@@ -47,25 +50,111 @@ function updateLocalTime() {
     });
 }
 
-function loadWeather(location) {
+function weatherText(code) {
+    var weatherDescriptions = {
+        0: "晴",
+        1: "大部晴朗",
+        2: "局部多云",
+        3: "阴",
+        45: "雾",
+        48: "雾凇",
+        51: "小毛毛雨",
+        53: "毛毛雨",
+        55: "大毛毛雨",
+        61: "小雨",
+        63: "中雨",
+        65: "大雨",
+        71: "小雪",
+        73: "中雪",
+        75: "大雪",
+        80: "小阵雨",
+        81: "阵雨",
+        82: "强阵雨",
+        95: "雷雨",
+        96: "雷雨伴冰雹",
+        99: "强雷雨伴冰雹"
+    };
+
+    return weatherDescriptions[code] || "天气未知";
+}
+
+function weatherIcon(code) {
+    if (code === 0) {
+        return "☀️";
+    }
+    if (code === 1 || code === 2) {
+        return "🌤️";
+    }
+    if (code === 3) {
+        return "☁️";
+    }
+    if (code === 45 || code === 48) {
+        return "🌫️";
+    }
+    if (code >= 51 && code <= 67) {
+        return "🌧️";
+    }
+    if (code >= 71 && code <= 77) {
+        return "🌨️";
+    }
+    if (code >= 80 && code <= 82) {
+        return "🌦️";
+    }
+    if (code >= 95) {
+        return "⛈️";
+    }
+    return "🌡️";
+}
+
+function windDirection(degrees) {
+    var directions = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"];
+    return directions[Math.round(degrees / 45) % 8];
+}
+
+function windLevel(speed) {
+    if (speed < 1) return 0;
+    if (speed < 6) return 1;
+    if (speed < 12) return 2;
+    if (speed < 20) return 3;
+    if (speed < 29) return 4;
+    if (speed < 39) return 5;
+    if (speed < 50) return 6;
+    if (speed < 62) return 7;
+    if (speed < 75) return 8;
+    if (speed < 89) return 9;
+    if (speed < 103) return 10;
+    if (speed < 118) return 11;
+    return 12;
+}
+
+function formatWeatherTime(value) {
+    return value ? value.slice(11, 16) : "--:--";
+}
+
+function formatAirValue(value) {
+    return value == null ? "暂无数据" : Math.round(value) + " μg/m³";
+}
+
+function loadWeather(latitude, longitude, locationName) {
     var weatherElement = document.getElementById("weather-info");
+    var forecastElement = document.getElementById("weather-forecast");
+    var locationElement = document.getElementById("weather-location");
 
     if (!weatherElement) {
         return;
     }
 
-    if (!weatherConfig.key) {
-        weatherElement.textContent = "请在 script.js 中填写和风天气 Key";
-        weatherElement.classList.add("is-muted");
-        return;
-    }
-
     var query = new URLSearchParams({
-        location: location,
-        key: weatherConfig.key
+        latitude: latitude,
+        longitude: longitude,
+        current: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,visibility,pressure_msl,cloud_cover,uv_index,precipitation,precipitation_probability",
+        daily: "sunrise,sunset",
+        forecast_days: "1",
+        timezone: "auto"
     });
 
-    fetch(weatherConfig.api + "/v7/weather/now?" + query.toString())
+    var apiHost = weatherConfig.apiHost.replace(/\/+$/, "");
+    fetch(apiHost + "/v1/forecast?" + query.toString())
         .then(function (response) {
             if (!response.ok) {
                 throw new Error("天气请求失败：" + response.status);
@@ -73,15 +162,71 @@ function loadWeather(location) {
             return response.json();
         })
         .then(function (data) {
-            if (!data || data.code !== "200" || !data.now) {
+            if (!data || !data.current) {
                 throw new Error("天气接口返回内容无效");
             }
 
+            var current = data.current;
+            if (locationElement && locationName) {
+                locationElement.textContent = "⌖ " + locationName;
+            }
             weatherElement.classList.remove("is-muted");
             weatherElement.innerHTML =
-                "<strong>" + data.now.temp + "°</strong> " + data.now.text +
-                "<span>" + data.now.windDir + " " + data.now.windScale + "级 · 湿度 " +
-                data.now.humidity + "%</span>";
+                "<div class=\"weather-main\"><span class=\"weather-icon\">" +
+                weatherIcon(current.weather_code) + "</span><strong>" +
+                Math.round(current.temperature_2m) + "°</strong><span>" +
+                weatherText(current.weather_code) + "</span></div>";
+
+            if (forecastElement && data.daily) {
+                var windSpeed = Math.round(current.wind_speed_10m);
+                var airQualityUrl = weatherConfig.airQualityApiHost +
+                    "/v1/air-quality?latitude=" + latitude +
+                    "&longitude=" + longitude +
+                    "&current=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone" +
+                    "&timezone=auto";
+                fetch(airQualityUrl)
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error("空气质量请求失败：" + response.status);
+                        }
+                        return response.json();
+                    })
+                    .catch(function (error) {
+                        console.error(error);
+                        return { current: {} };
+                    })
+                    .then(function (airData) {
+                        var air = airData.current || {};
+                        forecastElement.innerHTML =
+                            "<div class=\"weather-detail-heading\">今日天气详情" +
+                            "<span>" + weatherText(current.weather_code) + " " +
+                            weatherIcon(current.weather_code) + "</span></div>" +
+                            "<div class=\"weather-detail-grid\">" +
+                            "<div class=\"weather-detail-card\"><i>🌬️</i><span><em>风力</em><b>" + windDirection(current.wind_direction_10m) +
+                            "风 " + windLevel(windSpeed) + "级</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>👁️</i><span><em>能见度</em><b>" + (current.visibility / 1000).toFixed(1) + " km</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>🌡️</i><span><em>体感温度</em><b>" + Math.round(current.apparent_temperature) + "°</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>💧</i><span><em>湿度</em><b>" + current.relative_humidity_2m + "%</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>⏱️</i><span><em>气压</em><b>" + Math.round(current.pressure_msl) + " hPa</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>🍃</i><span><em>空气质量</em><b>" + (air.pm2_5 == null ? "暂无数据" : "PM2.5 " + Math.round(air.pm2_5)) + "</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>☁️</i><span><em>云量</em><b>" + current.cloud_cover + "%</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>☀️</i><span><em>紫外线</em><b>" + Number(current.uv_index).toFixed(1) + "</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>🌧️</i><span><em>降水量</em><b>" + Number(current.precipitation).toFixed(1) + " mm</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>☔</i><span><em>降水概率</em><b>" + current.precipitation_probability + "%</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>🌅</i><span><em>日出</em><b>" + formatWeatherTime(data.daily.sunrise[0]) + "</b></span></div>" +
+                            "<div class=\"weather-detail-card\"><i>🌇</i><span><em>日落</em><b>" + formatWeatherTime(data.daily.sunset[0]) + "</b></span></div>" +
+                            "</div>" +
+                            "<div class=\"air-quality-title\">污染物浓度</div>" +
+                            "<div class=\"pollutant-grid\">" +
+                            "<span><i>PM2.5</i><b>" + formatAirValue(air.pm2_5) + "</b></span>" +
+                            "<span><i>PM10</i><b>" + formatAirValue(air.pm10) + "</b></span>" +
+                            "<span><i>O₃</i><b>" + formatAirValue(air.ozone) + "</b></span>" +
+                            "<span><i>NO₂</i><b>" + formatAirValue(air.nitrogen_dioxide) + "</b></span>" +
+                            "<span><i>SO₂</i><b>" + formatAirValue(air.sulphur_dioxide) + "</b></span>" +
+                            "<span><i>CO</i><b>" + formatAirValue(air.carbon_monoxide) + "</b></span>" +
+                            "</div>";
+                    });
+            }
         })
         .catch(function (error) {
             console.error(error);
@@ -90,33 +235,130 @@ function loadWeather(location) {
         });
 }
 
-function loadLocalWeather() {
-    if (!weatherConfig.key) {
-        loadWeather(weatherConfig.city);
-        return;
-    }
+function loadWeatherForCity() {
+    var query = new URLSearchParams({
+        name: weatherConfig.city,
+        count: "1",
+        language: "zh",
+        format: "json"
+    });
 
+    fetch(weatherConfig.geocodingApiHost.replace(/\/+$/, "") + "/v1/search?" + query.toString())
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error("城市定位请求失败：" + response.status);
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            if (!data || !data.results || !data.results[0]) {
+                throw new Error("未找到默认城市");
+            }
+            loadWeather(data.results[0].latitude, data.results[0].longitude, weatherConfig.city);
+        })
+        .catch(function (error) {
+            console.error(error);
+            var weatherElement = document.getElementById("weather-info");
+            if (weatherElement) {
+                weatherElement.textContent = "天气暂时无法获取";
+                weatherElement.classList.add("is-muted");
+            }
+        });
+}
+
+function loadLocalWeather() {
+    fetch(weatherConfig.ipApi)
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error("IP 定位请求失败：" + response.status);
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            var location = data && data.data;
+            var latitude = location && Number(location.lat);
+            var longitude = location && Number(location.lng);
+            if (!data || data.code !== 200 ||
+                !location ||
+                !Number.isFinite(latitude) ||
+                !Number.isFinite(longitude)) {
+                throw new Error("IP 定位返回内容无效");
+            }
+            loadWeather(latitude, longitude, location.address || location.ip);
+        })
+        .catch(function (error) {
+            console.error(error);
+            loadBrowserWeather();
+        });
+}
+
+function loadBrowserWeather() {
     if (!navigator.geolocation) {
-        loadWeather(weatherConfig.city);
+        loadLocalWeather();
         return;
     }
 
     navigator.geolocation.getCurrentPosition(function (position) {
-        var location = position.coords.longitude.toFixed(2) + "," +
-            position.coords.latitude.toFixed(2);
-        loadWeather(location);
+        var latitude = position.coords.latitude;
+        var longitude = position.coords.longitude;
+        var geocodingQuery = new URLSearchParams({
+            latitude: latitude,
+            longitude: longitude,
+            language: "zh",
+            format: "json"
+        });
+
+        fetch(weatherConfig.geocodingApiHost.replace(/\/+$/, "") +
+            "/v1/reverse?" + geocodingQuery.toString())
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("精确位置名称请求失败：" + response.status);
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                var result = data && data.results && data.results[0];
+                var locationName = result &&
+                    (result.name || result.city || result.admin1);
+                loadWeather(latitude, longitude, locationName || "当前位置");
+            })
+            .catch(function () {
+                loadWeather(latitude, longitude, "当前位置");
+            });
     }, function () {
-        loadWeather(weatherConfig.city);
+        loadLocalWeather();
     }, {
-        enableHighAccuracy: false,
-        timeout: 5000,
-        maximumAge: 600000
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 300000
     });
+}
+
+function loadConfiguredWeatherLocation() {
+    if (typeof weatherConfig.latitude === "number" &&
+        typeof weatherConfig.longitude === "number") {
+        loadWeather(weatherConfig.latitude, weatherConfig.longitude, weatherConfig.city);
+        return;
+    }
+
+    loadWeatherForCity();
 }
 
 updateLocalTime();
 window.setInterval(updateLocalTime, 1000);
-loadLocalWeather();
+loadBrowserWeather();
+
+var weatherToggle = document.getElementById("weather-toggle");
+var weatherForecast = document.getElementById("weather-forecast");
+if (weatherToggle && weatherForecast) {
+    weatherForecast.classList.add("weather-forecast-collapsed");
+    weatherToggle.setAttribute("aria-expanded", "false");
+    weatherToggle.addEventListener("click", function () {
+        var expanded = weatherToggle.getAttribute("aria-expanded") === "true";
+        weatherToggle.setAttribute("aria-expanded", String(!expanded));
+        weatherForecast.classList.toggle("weather-forecast-collapsed", expanded);
+    });
+}
 
 function loadMusicPlaylist() {
     var playerElement = document.getElementById("music-player");
@@ -160,17 +402,18 @@ function loadMusicPlaylist() {
                 throw new Error("网易云歌单没有有效的音频地址");
             }
 
-            new APlayer({
+            var player = new APlayer({
                 container: playerElement,
                 mutex: true,
                 loop: "all",
                 order: "list",
                 volume: 0.7,
-                listFolded: false,
+                listFolded: true,
                 listMaxHeight: musicPlaylistConfig.listMaxHeight,
                 lrcType: 3,
                 audio: audio
             });
+
             statusElement.remove();
         })
         .catch(function (error) {
@@ -181,6 +424,64 @@ function loadMusicPlaylist() {
 }
 
 loadMusicPlaylist();
+
+function initializeMusicPanels() {
+    var container = document.getElementById("music-player");
+    var lyricPanel = container && container.querySelector(".aplayer-lrc");
+    var listPanel = container && container.querySelector(".aplayer-list");
+    var lyricButton = container && container.querySelector(".aplayer-icon-lrc");
+    var listButton = container && container.querySelector(".aplayer-icon-menu");
+
+    if (!container || !lyricPanel || !listPanel || !lyricButton || !listButton ||
+        container.dataset.panelsReady === "true") {
+        return;
+    }
+
+    var playerBody = container.querySelector(".aplayer-body");
+    var panelHost = container.querySelector(".music-panels");
+    if (!panelHost) {
+        panelHost = document.createElement("div");
+        panelHost.className = "music-panels";
+        if (playerBody) {
+            playerBody.insertAdjacentElement("afterend", panelHost);
+        } else {
+            container.appendChild(panelHost);
+        }
+    }
+    panelHost.appendChild(lyricPanel);
+    panelHost.appendChild(listPanel);
+
+    lyricPanel.classList.add("music-panel-hidden");
+    listPanel.classList.add("music-panel-hidden");
+    container.dataset.panelsReady = "true";
+
+    container.addEventListener("click", function (event) {
+        var clickedButton = event.target.closest(".aplayer-icon-lrc, .aplayer-icon-menu");
+        if (!clickedButton) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        var isLyricButton = clickedButton.classList.contains("aplayer-icon-lrc");
+        var panel = isLyricButton ? lyricPanel : listPanel;
+        var otherPanel = isLyricButton ? listPanel : lyricPanel;
+        var isOpen = !panel.classList.contains("music-panel-hidden");
+
+        panel.classList.toggle("music-panel-hidden", isOpen);
+        otherPanel.classList.add("music-panel-hidden");
+        lyricPanel.classList.toggle("aplayer-lrc-hide", isLyricButton ? isOpen : true);
+        listPanel.classList.toggle("aplayer-list-hide", isLyricButton ? true : isOpen);
+        window.setTimeout(function () {
+            lyricPanel.classList.toggle("aplayer-lrc-hide", lyricPanel.classList.contains("music-panel-hidden"));
+            listPanel.classList.toggle("aplayer-list-hide", listPanel.classList.contains("music-panel-hidden"));
+        }, 0);
+    }, true);
+}
+
+window.setTimeout(initializeMusicPanels, 300);
+window.setTimeout(initializeMusicPanels, 1000);
 
 document.addEventListener('contextmenu', function (event) {
     event.preventDefault();
@@ -355,13 +656,99 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             changeTheme("Dark");
         }
+        updateOpacityVariables();
     });
 
     if (themeState == "Dark") {
         Checkbox.checked = false;
     }
 
+    var settingsToggle = document.querySelector(".theme-settings-toggle");
+    var settingsPanel = document.getElementById("theme-settings-panel");
+    var backgroundOpacity = document.getElementById("background-opacity");
+    var backgroundBlur = document.getElementById("background-blur");
+    var cardOpacity = document.getElementById("card-opacity");
+    var cardBlur = document.getElementById("card-blur");
+    var cardColor = document.getElementById("card-color");
+
+    function updateOpacityVariables() {
+        var backgroundValue = backgroundOpacity.value;
+        var cardValue = cardOpacity.value;
+        var savedCardColor = window.localStorage.getItem("cardColor");
+        var activeCardColor = savedCardColor || (themeState === "Dark" ? "#19202d" : "#eff6fc");
+        var colorParts = activeCardColor.replace("#", "").match(/.{2}/g).map(function (part) {
+            return parseInt(part, 16);
+        });
+        var cardRgb = colorParts.join(", ");
+        html.style.setProperty("--background-opacity", backgroundValue);
+        html.style.setProperty("--back_filter", backgroundBlur.value + "px");
+        html.style.setProperty("--card-opacity", cardValue);
+        html.style.setProperty("--card_filter", cardBlur.value + "px");
+        html.style.setProperty("--item_bg_color", "rgba(" + cardRgb + ", " + cardValue + ")");
+        html.style.setProperty("--music-card-bg", "rgba(" + cardRgb + ", " + cardValue + ")");
+        window.localStorage.setItem("backgroundOpacity", backgroundValue);
+        window.localStorage.setItem("backgroundBlur", backgroundBlur.value);
+        window.localStorage.setItem("cardOpacity", cardValue);
+        window.localStorage.setItem("cardBlur", cardBlur.value);
+    }
+
+    if (settingsToggle && settingsPanel) {
+        settingsToggle.addEventListener("click", function () {
+            var expanded = settingsToggle.getAttribute("aria-expanded") === "true";
+            settingsToggle.setAttribute("aria-expanded", String(!expanded));
+            settingsPanel.hidden = expanded;
+        });
+
+        document.addEventListener("click", function (event) {
+            if (!settingsPanel.contains(event.target) && !settingsToggle.contains(event.target)) {
+                settingsToggle.setAttribute("aria-expanded", "false");
+                settingsPanel.hidden = true;
+            }
+        });
+    }
+
+    var savedBackgroundOpacity = window.localStorage.getItem("backgroundOpacity");
+    var savedBackgroundBlur = window.localStorage.getItem("backgroundBlur");
+    var savedCardOpacity = window.localStorage.getItem("cardOpacity");
+    var savedCardBlur = window.localStorage.getItem("cardBlur");
+    var savedCardColor = window.localStorage.getItem("cardColor");
+    var isDarkTheme = themeState === "Dark";
+    if (savedBackgroundOpacity !== null) {
+        backgroundOpacity.value = savedBackgroundOpacity;
+    } else if (isDarkTheme) {
+        backgroundOpacity.value = "0.38";
+    }
+    if (savedBackgroundBlur !== null) {
+        backgroundBlur.value = savedBackgroundBlur;
+    } else if (isDarkTheme) {
+        backgroundBlur.value = "12";
+    }
+    if (savedCardOpacity !== null) {
+        cardOpacity.value = savedCardOpacity;
+    } else if (isDarkTheme) {
+        cardOpacity.value = "0.78";
+    }
+    if (savedCardBlur !== null) {
+        cardBlur.value = savedCardBlur;
+    } else if (isDarkTheme) {
+        cardBlur.value = "18";
+    }
+    if (savedCardColor !== null) {
+        cardColor.value = savedCardColor;
+    } else if (themeState === "Dark") {
+        cardColor.value = "#19202d";
+    }
+    backgroundOpacity.addEventListener("input", updateOpacityVariables);
+    backgroundBlur.addEventListener("input", updateOpacityVariables);
+    cardOpacity.addEventListener("input", updateOpacityVariables);
+    cardBlur.addEventListener("input", updateOpacityVariables);
+    cardColor.addEventListener("input", function () {
+        window.localStorage.setItem("cardColor", cardColor.value);
+        updateOpacityVariables();
+    });
+
     changeTheme(themeState);
+    updateOpacityVariables();
 
 });
 

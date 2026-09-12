@@ -42,8 +42,19 @@
 				<div id="local-time" class="local-time">--:--:--</div>
 				<div id="local-date" class="local-date">正在获取日期...</div>
 				<div class="weather-divider"></div>
-				<div class="time-weather-title">天气</div>
+				<div class="weather-heading">
+					<div class="time-weather-title">天气预报</div>
+					<button id="weather-toggle" class="weather-toggle" type="button" aria-expanded="false"
+						aria-label="展开今日天气详情" title="展开今日天气详情">
+						<svg class="weather-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+							<path d="M12 3a6 6 0 0 1 5.65 4H18a4 4 0 1 1 0 8H7a5 5 0 1 1 1.1-9.88A6 6 0 0 1 12 3Z"></path>
+							<path d="m8 18 4 3 4-3"></path>
+						</svg>
+					</button>
+				</div>
+				<div id="weather-location" class="weather-location">正在定位...</div>
 				<div id="weather-info" class="weather-info" aria-live="polite">正在获取天气...</div>
+				<div id="weather-forecast" class="weather-forecast" hidden></div>
 			</div>
 			<div class="left-div left-des">
 				<div class="left-des-item"><svg t="1705773709627" class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -181,16 +192,46 @@
 								p-id="1862"></path>
 						</svg>
 						<div class="iconTip">QQ</div>
-					</a> <a class="switch" href="javascript:void(0)">
-						<div class="onoffswitch">
+					</a>
+					<div class="theme-settings">
+						<button class="theme-settings-toggle" type="button" aria-expanded="false"
+							aria-controls="theme-settings-panel" title="主题设置">◐</button>
+						<div class="theme-settings-panel" id="theme-settings-panel" hidden>
+							<label class="theme-setting-row">
+								<span>明暗主题</span>
+								<span class="onoffswitch">
 							<input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch"
 								checked>
 							<label class="onoffswitch-label" for="myonoffswitch">
 								<span class="onoffswitch-inner"></span>
 								<span class="onoffswitch-switch"></span>
 							</label>
+								</span>
+							</label>
+							<label class="theme-setting-row" for="background-opacity">
+								<span>背景透明度</span>
+								<input id="background-opacity" type="range" min="0" max="0.6" step="0.01"
+									value="0.1">
+							</label>
+							<label class="theme-setting-row" for="background-blur">
+								<span>背景模糊度</span>
+								<input id="background-blur" type="range" min="0" max="30" step="1" value="6">
+							</label>
+							<label class="theme-setting-row" for="card-opacity">
+								<span>卡片透明度</span>
+								<input id="card-opacity" type="range" min="0" max="0.95" step="0.01"
+									value="0.62">
+							</label>
+							<label class="theme-setting-row" for="card-blur">
+								<span>卡片模糊度</span>
+								<input id="card-blur" type="range" min="0" max="30" step="1" value="12">
+							</label>
+							<label class="theme-setting-row theme-color-row" for="card-color">
+								<span>卡片颜色</span>
+								<input id="card-color" type="color" value="#eff6fc">
+							</label>
 						</div>
-					</a>
+					</div>
 				</div>
 				<div class=""><img src="https://count.getloli.com/get/@:muyu?theme=rule34" alt="访问统计" />
 				</div>
