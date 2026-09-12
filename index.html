@@ -11,6 +11,7 @@
 	<meta name="description" content="永远相信美好的事情即将发生————">
 	<meta name="keywords" content="Muyuの主页">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="https://unpkg.com/aplayer@1.10.1/dist/APlayer.min.css">
 	<link rel="stylesheet" href="./static/css/style.css">
 	<link rel="stylesheet" href="./static/css/root.css">
 
@@ -30,6 +31,19 @@
 			<div class="logo" style="background-image: url(./static/img/favicon.gif);">
 				<img style="position: absolute;top:-15%;left:-10%;width: 120%; aspect-ratio: 1/1;"
 					src="./static/img/logokuang.png">
+			</div>
+			<div class="left-div hitokoto" aria-live="polite">
+				<div class="hitokoto-label">一言</div>
+				<div id="hitokoto-text" class="hitokoto-text">正在获取一言...</div>
+				<div id="hitokoto-from" class="hitokoto-from"></div>
+			</div>
+			<div class="left-div time-weather-card">
+				<div class="time-weather-title">当地时间</div>
+				<div id="local-time" class="local-time">--:--:--</div>
+				<div id="local-date" class="local-date">正在获取日期...</div>
+				<div class="weather-divider"></div>
+				<div class="time-weather-title">天气</div>
+				<div id="weather-info" class="weather-info" aria-live="polite">正在获取天气...</div>
 			</div>
 			<div class="left-div left-des">
 				<div class="left-des-item"><svg t="1705773709627" class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -122,6 +136,11 @@
 				<div class="description">📝 永远相信美好的 <span class="purpleText textBackground">事情</span> 即将
 					<span class="purpleText textBackground">发生</span> ————
 				</div>
+				<div class="music-card">
+					<div class="music-card-title">音乐</div>
+					<div id="music-player"></div>
+					<div id="music-player-status" class="music-player-status" aria-live="polite">正在加载歌单...</div>
+				</div>
 
 				<div class="iconContainer">
 					<a class="iconItem" onclick="" href="https://github.com/muyudada">
@@ -176,7 +195,9 @@
 				<div class=""><img src="https://count.getloli.com/get/@:muyu?theme=rule34" alt="访问统计" />
 				</div>
 				<div class="tanChiShe">
-					<img id="tanChiShe" src="./static/svg/snake-Light.svg" alt="">
+					<img id="tanChiShe"
+						src="https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake.svg"
+						alt="GitHub contributions snake">
 				</div>
 			</header>
 
@@ -302,6 +323,7 @@
 
 	</div>
 </body>
+<script src="https://unpkg.com/aplayer@1.10.1/dist/APlayer.min.js"></script>
 <script src="./static/js/script.js"> </script>
 
 

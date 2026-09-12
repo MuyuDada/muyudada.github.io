@@ -7,6 +7,181 @@ console.log(' %c  > ^ <', 'color: #8B4513; font-size: 20px;');
 console.log('  %c /  ~ \\', 'color: #8B4513; font-size: 20px;');
 console.log('  %c/______\\', 'color: #8B4513; font-size: 20px;');
 
+// 修改这里的 id 即可替换为自己的网易云歌单（歌单链接中的 id）。
+var musicPlaylistConfig = {
+    server: "netease",
+    type: "playlist",
+    id: "7088182166",
+    api: "https://api.injahow.cn/meting/",
+    listMaxHeight: "180px"
+};
+
+// 和风天气配置：将 key 替换为控制台申请的 Web API Key。
+var weatherConfig = {
+    key: "88ae3e30712d4c7ea92e8b8b209949fb",
+    city: "石家庄",
+    api: "n27p3u5uhf.re.qweatherapi.com",
+    geoApi: "https://geoapi.qweather.com"
+};
+
+function updateLocalTime() {
+    var timeElement = document.getElementById("local-time");
+    var dateElement = document.getElementById("local-date");
+
+    if (!timeElement || !dateElement) {
+        return;
+    }
+
+    var now = new Date();
+    timeElement.textContent = now.toLocaleTimeString("zh-CN", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
+    dateElement.textContent = now.toLocaleDateString("zh-CN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "long"
+    });
+}
+
+function loadWeather(location) {
+    var weatherElement = document.getElementById("weather-info");
+
+    if (!weatherElement) {
+        return;
+    }
+
+    if (!weatherConfig.key) {
+        weatherElement.textContent = "请在 script.js 中填写和风天气 Key";
+        weatherElement.classList.add("is-muted");
+        return;
+    }
+
+    var query = new URLSearchParams({
+        location: location,
+        key: weatherConfig.key
+    });
+
+    fetch(weatherConfig.api + "/v7/weather/now?" + query.toString())
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error("天气请求失败：" + response.status);
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            if (!data || data.code !== "200" || !data.now) {
+                throw new Error("天气接口返回内容无效");
+            }
+
+            weatherElement.classList.remove("is-muted");
+            weatherElement.innerHTML =
+                "<strong>" + data.now.temp + "°</strong> " + data.now.text +
+                "<span>" + data.now.windDir + " " + data.now.windScale + "级 · 湿度 " +
+                data.now.humidity + "%</span>";
+        })
+        .catch(function (error) {
+            console.error(error);
+            weatherElement.textContent = "天气暂时无法获取";
+            weatherElement.classList.add("is-muted");
+        });
+}
+
+function loadLocalWeather() {
+    if (!weatherConfig.key) {
+        loadWeather(weatherConfig.city);
+        return;
+    }
+
+    if (!navigator.geolocation) {
+        loadWeather(weatherConfig.city);
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function (position) {
+        var location = position.coords.longitude.toFixed(2) + "," +
+            position.coords.latitude.toFixed(2);
+        loadWeather(location);
+    }, function () {
+        loadWeather(weatherConfig.city);
+    }, {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 600000
+    });
+}
+
+updateLocalTime();
+window.setInterval(updateLocalTime, 1000);
+loadLocalWeather();
+
+function loadMusicPlaylist() {
+    var playerElement = document.getElementById("music-player");
+    var statusElement = document.getElementById("music-player-status");
+
+    if (!playerElement || !statusElement || typeof APlayer === "undefined") {
+        return;
+    }
+
+    var query = new URLSearchParams({
+        server: musicPlaylistConfig.server,
+        type: musicPlaylistConfig.type,
+        id: musicPlaylistConfig.id
+    });
+
+    fetch(musicPlaylistConfig.api + "?" + query.toString())
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error("网易云歌单请求失败：" + response.status);
+            }
+            return response.json();
+        })
+        .then(function (playlist) {
+            if (!Array.isArray(playlist) || playlist.length === 0) {
+                throw new Error("网易云歌单没有可播放的歌曲");
+            }
+
+            var audio = playlist.map(function (song) {
+                return {
+                    name: song.name,
+                    artist: song.artist,
+                    url: song.url,
+                    cover: song.pic,
+                    lrc: song.lrc
+                };
+            }).filter(function (song) {
+                return song.name && song.url;
+            });
+
+            if (audio.length === 0) {
+                throw new Error("网易云歌单没有有效的音频地址");
+            }
+
+            new APlayer({
+                container: playerElement,
+                mutex: true,
+                loop: "all",
+                order: "list",
+                volume: 0.7,
+                listFolded: false,
+                listMaxHeight: musicPlaylistConfig.listMaxHeight,
+                lrcType: 3,
+                audio: audio
+            });
+            statusElement.remove();
+        })
+        .catch(function (error) {
+            console.error(error);
+            statusElement.textContent = "歌单加载失败，请检查网易云歌单 ID。";
+            statusElement.classList.add("is-error");
+        });
+}
+
+loadMusicPlaylist();
+
 document.addEventListener('contextmenu', function (event) {
     event.preventDefault();
 });
@@ -85,6 +260,74 @@ function getCookie(name) {
     return null;
 }
 
+var hitokotoRotateTimer = null;
+
+function loadHitokoto() {
+    var textElement = document.getElementById("hitokoto-text");
+    var fromElement = document.getElementById("hitokoto-from");
+
+    if (!textElement || !fromElement) {
+        return;
+    }
+
+    textElement.classList.remove("typing");
+
+    fetch("https://v1.hitokoto.cn")
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error("一言接口请求失败：" + response.status);
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            if (!data || typeof data.hitokoto !== "string" || !data.hitokoto.trim()) {
+                throw new Error("一言接口返回内容无效");
+            }
+
+            var text = data.hitokoto.trim();
+            var source = typeof data.from_who === "string" && data.from_who.trim()
+                ? data.from_who.trim()
+                : data.from;
+            var index = 0;
+
+            textElement.textContent = "";
+            textElement.classList.add("typing");
+            fromElement.textContent = source ? "—— " + source : "";
+
+            function typeNextCharacter() {
+                if (index >= text.length) {
+                    textElement.classList.remove("typing");
+                    return;
+                }
+
+                textElement.textContent += text.charAt(index);
+                index += 1;
+                window.setTimeout(typeNextCharacter, 75);
+            }
+
+            typeNextCharacter();
+        })
+        .catch(function (error) {
+            console.error(error);
+            textElement.textContent = "暂时无法获取一言，请稍后再试。";
+            fromElement.textContent = "";
+            textElement.classList.remove("typing");
+        });
+}
+
+function startHitokotoRotation() {
+    if (hitokotoRotateTimer) {
+        window.clearInterval(hitokotoRotateTimer);
+    }
+
+    loadHitokoto();
+    hitokotoRotateTimer = window.setInterval(function () {
+        loadHitokoto();
+    }, 20000);
+}
+
+startHitokotoRotation();
+
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -95,7 +338,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     function changeTheme(theme) {
-        tanChiShe.src = "./static/svg/snake-" + theme + ".svg";
+        tanChiShe.src = theme == "Dark"
+            ? "https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake-dark.svg"
+            : "https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake.svg";
         html.dataset.theme = theme;
         setCookie("themeState", theme, 365);
         themeState = theme;

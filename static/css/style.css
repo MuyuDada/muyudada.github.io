@@ -234,6 +234,172 @@ body {
     margin-right: 10px;
 }
 
+.hitokoto {
+    min-height: 92px;
+    box-sizing: border-box;
+    padding: 16px;
+}
+
+.hitokoto-label {
+    color: var(--purple_text_color);
+    font-size: 13px;
+    margin-bottom: 9px;
+}
+
+.hitokoto-text {
+    min-height: 42px;
+    line-height: 21px;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+.hitokoto-text.typing::after {
+    content: "|";
+    display: inline-block;
+    margin-left: 2px;
+    animation: hitokotoCursor 0.8s steps(1) infinite;
+}
+
+.hitokoto-from {
+    margin-top: 8px;
+    color: var(--item_left_text_color);
+    font-size: 12px;
+    opacity: 0.75;
+    text-align: right;
+}
+
+.music-card {
+    width: min(100%, 420px);
+    margin: 24px 0 0 auto;
+    padding: 14px;
+    border-radius: 13px;
+    backdrop-filter: blur(var(--card_filter));
+    -webkit-backdrop-filter: blur(var(--card_filter));
+    background: var(--item_bg_color);
+}
+
+.music-card-title {
+    color: var(--purple_text_color);
+    font-size: 13px;
+    padding: 2px 2px 8px;
+}
+
+.music-card .aplayer {
+    margin: 0;
+    box-shadow: none;
+    background: transparent;
+    font-family: inherit;
+    color: var(--main_text_color);
+}
+
+.music-card .aplayer .aplayer-body {
+    min-height: 66px;
+}
+
+.music-card .aplayer .aplayer-pic {
+    width: 66px;
+    height: 66px;
+}
+
+.music-card .aplayer .aplayer-info {
+    height: 66px;
+    padding: 10px 7px 0 12px;
+}
+
+.music-card .aplayer .aplayer-info {
+    border-top: 0;
+}
+
+.music-card .aplayer .aplayer-title,
+.music-card .aplayer .aplayer-author {
+    color: var(--main_text_color);
+}
+
+.music-card .aplayer .aplayer-list {
+    border-top: 1px solid var(--item_hover_color);
+    margin-top: 10px;
+    max-height: 180px;
+}
+
+.music-card .aplayer .aplayer-bar-wrap .aplayer-bar,
+.music-card .aplayer .aplayer-volume-wrap .aplayer-volume-bar {
+    background: var(--item_hover_color);
+}
+
+.music-card .aplayer .aplayer-bar-wrap .aplayer-bar .aplayer-loaded,
+.music-card .aplayer .aplayer-bar-wrap .aplayer-bar .aplayer-played,
+.music-card .aplayer .aplayer-volume-wrap .aplayer-volume-bar .aplayer-volume {
+    background: var(--purple_text_color);
+}
+
+.music-player-status {
+    padding: 12px 2px 2px;
+    color: var(--item_left_text_color);
+    font-size: 12px;
+    opacity: 0.75;
+}
+
+.music-player-status.is-error {
+    color: #ff8c8c;
+}
+
+.time-weather-card {
+    padding: 16px;
+}
+
+.time-weather-title {
+    color: var(--purple_text_color);
+    font-size: 13px;
+}
+
+.local-time {
+    margin-top: 5px;
+    font-family: "b", sans-serif;
+    font-size: 27px;
+    letter-spacing: 1px;
+}
+
+.local-date {
+    margin-top: 3px;
+    color: var(--item_left_text_color);
+    font-size: 12px;
+}
+
+.weather-divider {
+    height: 1px;
+    margin: 14px 0;
+    background: var(--item_hover_color);
+}
+
+.weather-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.weather-info strong {
+    font-size: 24px;
+    font-weight: normal;
+}
+
+.weather-info span {
+    color: var(--item_left_text_color);
+    font-size: 12px;
+}
+
+.weather-info.is-muted {
+    color: var(--item_left_text_color);
+    font-size: 12px;
+}
+
+@keyframes hitokotoCursor {
+    50% {
+        opacity: 0;
+    }
+}
+
 .left-tag {
     display: flex;
     flex-direction: row;
@@ -387,6 +553,10 @@ body {
     overflow-x: scroll;
     margin-top: 20px;
 
+}
+
+.zyyo-right > header > .music-card .aplayer .aplayer-list {
+    max-height: 140px;
 }
 
 .iconContainer::-webkit-scrollbar {
