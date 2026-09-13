@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="zyyo.net">
+<html class="zyyo.net" data-theme="Light">
 
 <head class="zyyo.net">
 
@@ -134,7 +134,7 @@
 		</div>
 		<div class="zyyo-right">
 			<header>
-				<div class="index-logo" style="background-image: url(./static/img/logo.png);">
+				<div class="index-logo" style="background-image: url(./static/img/favicon.gif);">
 					<img style="position: absolute;top:-15%;left:-10%;width: 120%; aspect-ratio: 1/1;"
 						src="./static/img/logokuang.png">
 				</div>
@@ -153,8 +153,9 @@
 					<div id="music-player-status" class="music-player-status" aria-live="polite">正在加载歌单...</div>
 				</div>
 
-				<div class="iconContainer">
-					<a class="iconItem" onclick="" href="https://github.com/muyudada">
+				<div class="iconRow">
+					<div class="iconContainer">
+						<a class="iconItem" onclick="" href="https://github.com/muyudada">
 						<svg t="1704870335945" class="icon" viewBox="0 0 1024 1024" version="1.1"
 							xmlns="http://www.w3.org/2000/svg" p-id="2487">
 							<path
@@ -193,6 +194,7 @@
 						</svg>
 						<div class="iconTip">QQ</div>
 					</a>
+					</div>
 					<div class="theme-settings">
 						<button class="theme-settings-toggle" type="button" aria-expanded="false"
 							aria-controls="theme-settings-panel" title="主题设置">◐</button>
@@ -211,11 +213,11 @@
 							<label class="theme-setting-row" for="background-opacity">
 								<span>背景透明度</span>
 								<input id="background-opacity" type="range" min="0" max="0.6" step="0.01"
-									value="0.1">
+									value="0.2">
 							</label>
 							<label class="theme-setting-row" for="background-blur">
 								<span>背景模糊度</span>
-								<input id="background-blur" type="range" min="0" max="30" step="1" value="6">
+								<input id="background-blur" type="range" min="0" max="30" step="1" value="10">
 							</label>
 							<label class="theme-setting-row" for="card-opacity">
 								<span>卡片透明度</span>

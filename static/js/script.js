@@ -415,6 +415,7 @@ function loadMusicPlaylist() {
             });
 
             statusElement.remove();
+            initializeMusicPanels();
         })
         .catch(function (error) {
             console.error(error);
@@ -432,9 +433,11 @@ function initializeMusicPanels() {
     var lyricButton = container && container.querySelector(".aplayer-icon-lrc");
     var listButton = container && container.querySelector(".aplayer-icon-menu");
 
-    if (!container || !lyricPanel || !listPanel || !lyricButton || !listButton ||
-        container.dataset.panelsReady === "true") {
-        return;
+    if (!container || container.dataset.panelsReady === "true") {
+        return Boolean(container);
+    }
+    if (!lyricPanel || !listPanel || !lyricButton || !listButton) {
+        return false;
     }
 
     var playerBody = container.querySelector(".aplayer-body");
@@ -478,10 +481,18 @@ function initializeMusicPanels() {
             listPanel.classList.toggle("aplayer-list-hide", listPanel.classList.contains("music-panel-hidden"));
         }, 0);
     }, true);
+
+    return true;
 }
 
-window.setTimeout(initializeMusicPanels, 300);
-window.setTimeout(initializeMusicPanels, 1000);
+var musicPanelsRetries = 0;
+window.setTimeout(function pollMusicPanels() {
+    musicPanelsRetries += 1;
+    if (initializeMusicPanels() || musicPanelsRetries > 50) {
+        return;
+    }
+    window.setTimeout(pollMusicPanels, 400);
+}, 300);
 
 document.addEventListener('contextmenu', function (event) {
     event.preventDefault();
@@ -638,31 +649,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var tanChiShe = document.getElementById("tanChiShe");
 
 
-    function changeTheme(theme) {
-        tanChiShe.src = theme == "Dark"
-            ? "https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake-dark.svg"
-            : "https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake.svg";
-        html.dataset.theme = theme;
-        setCookie("themeState", theme, 365);
-        themeState = theme;
-    }
-
-    var Checkbox = document.getElementById('myonoffswitch')
-    Checkbox.addEventListener('change', function () {
-        if (themeState == "Dark") {
-            changeTheme("Light");
-        } else if (themeState == "Light") {
-            changeTheme("Dark");
-        } else {
-            changeTheme("Dark");
-        }
-        updateOpacityVariables();
-    });
-
-    if (themeState == "Dark") {
-        Checkbox.checked = false;
-    }
-
     var settingsToggle = document.querySelector(".theme-settings-toggle");
     var settingsPanel = document.getElementById("theme-settings-panel");
     var backgroundOpacity = document.getElementById("background-opacity");
@@ -671,25 +657,67 @@ document.addEventListener('DOMContentLoaded', function () {
     var cardBlur = document.getElementById("card-blur");
     var cardColor = document.getElementById("card-color");
 
-    function updateOpacityVariables() {
-        var backgroundValue = backgroundOpacity.value;
-        var cardValue = cardOpacity.value;
-        var savedCardColor = window.localStorage.getItem("cardColor");
-        var activeCardColor = savedCardColor || (themeState === "Dark" ? "#19202d" : "#eff6fc");
-        var colorParts = activeCardColor.replace("#", "").match(/.{2}/g).map(function (part) {
+    var themeDefaults = {
+        Light: {
+            backgroundOpacity: "0.2",
+            backgroundBlur: "10",
+            cardOpacity: "0.62",
+            cardBlur: "12",
+            cardColor: "#eff6fc"
+        },
+        Dark: {
+            backgroundOpacity: "0.38",
+            backgroundBlur: "12",
+            cardOpacity: "0.78",
+            cardBlur: "18",
+            cardColor: "#181e2a"
+        }
+    };
+
+    function getThemeDefaults() {
+        return themeDefaults[themeState] || themeDefaults.Light;
+    }
+
+    function currentCardColor() {
+        var colorKey = themeState == "Dark" ? "cardColorDark" : "cardColorLight";
+        var savedColor = window.localStorage.getItem(colorKey) ||
+            window.localStorage.getItem("cardColor");
+        return savedColor || getThemeDefaults().cardColor;
+    }
+
+    function updateThemeVariables() {
+        var colorParts = cardColor.value.replace("#", "").match(/.{2}/g).map(function (part) {
             return parseInt(part, 16);
         });
-        var cardRgb = colorParts.join(", ");
-        html.style.setProperty("--background-opacity", backgroundValue);
+        html.style.setProperty("--background-opacity", backgroundOpacity.value);
         html.style.setProperty("--back_filter", backgroundBlur.value + "px");
-        html.style.setProperty("--card-opacity", cardValue);
+        html.style.setProperty("--card-opacity", cardOpacity.value);
         html.style.setProperty("--card_filter", cardBlur.value + "px");
-        html.style.setProperty("--item_bg_color", "rgba(" + cardRgb + ", " + cardValue + ")");
-        html.style.setProperty("--music-card-bg", "rgba(" + cardRgb + ", " + cardValue + ")");
-        window.localStorage.setItem("backgroundOpacity", backgroundValue);
+        html.style.setProperty("--card-base-rgb", colorParts.join(", "));
+        window.localStorage.setItem("backgroundOpacity", backgroundOpacity.value);
         window.localStorage.setItem("backgroundBlur", backgroundBlur.value);
-        window.localStorage.setItem("cardOpacity", cardValue);
+        window.localStorage.setItem("cardOpacity", cardOpacity.value);
         window.localStorage.setItem("cardBlur", cardBlur.value);
+    }
+
+    function changeTheme(theme) {
+        tanChiShe.src = theme == "Dark"
+            ? "https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake-dark.svg"
+            : "https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake.svg";
+        html.dataset.theme = theme;
+        setCookie("themeState", theme, 365);
+        themeState = theme;
+        cardColor.value = currentCardColor();
+    }
+
+    var Checkbox = document.getElementById('myonoffswitch')
+    Checkbox.addEventListener('change', function () {
+        changeTheme(themeState == "Dark" ? "Light" : "Dark");
+        updateThemeVariables();
+    });
+
+    if (themeState == "Dark") {
+        Checkbox.checked = false;
     }
 
     if (settingsToggle && settingsPanel) {
@@ -707,48 +735,28 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    var defaults = getThemeDefaults();
     var savedBackgroundOpacity = window.localStorage.getItem("backgroundOpacity");
     var savedBackgroundBlur = window.localStorage.getItem("backgroundBlur");
     var savedCardOpacity = window.localStorage.getItem("cardOpacity");
     var savedCardBlur = window.localStorage.getItem("cardBlur");
-    var savedCardColor = window.localStorage.getItem("cardColor");
-    var isDarkTheme = themeState === "Dark";
-    if (savedBackgroundOpacity !== null) {
-        backgroundOpacity.value = savedBackgroundOpacity;
-    } else if (isDarkTheme) {
-        backgroundOpacity.value = "0.38";
-    }
-    if (savedBackgroundBlur !== null) {
-        backgroundBlur.value = savedBackgroundBlur;
-    } else if (isDarkTheme) {
-        backgroundBlur.value = "12";
-    }
-    if (savedCardOpacity !== null) {
-        cardOpacity.value = savedCardOpacity;
-    } else if (isDarkTheme) {
-        cardOpacity.value = "0.78";
-    }
-    if (savedCardBlur !== null) {
-        cardBlur.value = savedCardBlur;
-    } else if (isDarkTheme) {
-        cardBlur.value = "18";
-    }
-    if (savedCardColor !== null) {
-        cardColor.value = savedCardColor;
-    } else if (themeState === "Dark") {
-        cardColor.value = "#19202d";
-    }
-    backgroundOpacity.addEventListener("input", updateOpacityVariables);
-    backgroundBlur.addEventListener("input", updateOpacityVariables);
-    cardOpacity.addEventListener("input", updateOpacityVariables);
-    cardBlur.addEventListener("input", updateOpacityVariables);
+    backgroundOpacity.value = savedBackgroundOpacity !== null ? savedBackgroundOpacity : defaults.backgroundOpacity;
+    backgroundBlur.value = savedBackgroundBlur !== null ? savedBackgroundBlur : defaults.backgroundBlur;
+    cardOpacity.value = savedCardOpacity !== null ? savedCardOpacity : defaults.cardOpacity;
+    cardBlur.value = savedCardBlur !== null ? savedCardBlur : defaults.cardBlur;
+    cardColor.value = currentCardColor();
+
+    backgroundOpacity.addEventListener("input", updateThemeVariables);
+    backgroundBlur.addEventListener("input", updateThemeVariables);
+    cardOpacity.addEventListener("input", updateThemeVariables);
+    cardBlur.addEventListener("input", updateThemeVariables);
     cardColor.addEventListener("input", function () {
-        window.localStorage.setItem("cardColor", cardColor.value);
-        updateOpacityVariables();
+        window.localStorage.setItem(themeState == "Dark" ? "cardColorDark" : "cardColorLight", cardColor.value);
+        updateThemeVariables();
     });
 
     changeTheme(themeState);
-    updateOpacityVariables();
+    updateThemeVariables();
 
 });
 
