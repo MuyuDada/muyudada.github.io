@@ -344,7 +344,7 @@ body {
 .music-card .aplayer {
     margin: 0;
     color: var(--music-text);
-    font-family: inherit;
+    font-family: "b", "a", sans-serif;
     background: transparent;
     box-shadow: none;
     border-radius: 0;
@@ -478,6 +478,9 @@ body {
     opacity: 1 !important;
     cursor: pointer;
     transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.music-card .aplayer .aplayer-icon-forward {
     transform: rotate(180deg) !important;
 }
 
