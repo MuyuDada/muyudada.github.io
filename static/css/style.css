@@ -443,7 +443,7 @@ body {
 
 .music-card .aplayer .aplayer-time {
     position: relative;
-    right: auto;
+    right: 14px !important;
     bottom: auto;
     display: flex;
     align-items: center;
@@ -478,6 +478,7 @@ body {
     opacity: 1 !important;
     cursor: pointer;
     transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+    transform: rotate(180deg) !important;
 }
 
 .music-card .aplayer .aplayer-time .aplayer-icon svg {
@@ -517,7 +518,7 @@ body {
     margin-top: 10px;
 }
 
-.music-card .aplayer .music-panels > .aplayer-lrc {
+.music-card .aplayer .music-panels>.aplayer-lrc {
     display: block !important;
     margin: 0;
 }
@@ -536,7 +537,7 @@ body {
     color: var(--music-text);
 }
 
-.music-card .aplayer .music-panels > .aplayer-list {
+.music-card .aplayer .music-panels>.aplayer-list {
     display: block !important;
     max-height: 168px;
     margin: 0;
@@ -548,7 +549,7 @@ body {
 }
 
 .music-card .aplayer .aplayer-lrc,
-.music-card .aplayer .music-panels > .aplayer-list {
+.music-card .aplayer .music-panels>.aplayer-list {
     transition: max-height 0.3s ease, opacity 0.24s ease, transform 0.3s ease,
         margin 0.3s ease, padding 0.3s ease, border-width 0.3s ease;
 }
@@ -795,7 +796,7 @@ body {
     gap: 3px;
 }
 
-.weather-detail-grid > div {
+.weather-detail-grid>div {
     display: flex;
     align-items: center;
     gap: 5px;
@@ -805,7 +806,7 @@ body {
     background: var(--item_hover_color);
 }
 
-.weather-detail-card > i {
+.weather-detail-card>i {
     display: inline-flex;
     flex: 0 0 23px;
     align-items: center;
@@ -818,7 +819,7 @@ body {
     font-style: normal;
 }
 
-.weather-detail-card > span {
+.weather-detail-card>span {
     display: flex;
     min-width: 0;
     flex-direction: column;
@@ -1527,9 +1528,6 @@ footer {
 
 
 
-
-
-
 .onoffswitch {
     position: relative;
     width: 38px;
@@ -1720,15 +1718,17 @@ footer {
 
 /* 帧率检测 */
 #fps {
-
     position: fixed;
     font-family: "a";
     /* 指定位置 */
     left: 30px;
     top: 20px;
     z-index: 1919810;
-    background-color: rgba(0, 0, 0, 0.52);
-    backdrop-filter: var(--backdrop-filter);
+    background: var(--item_bg_color);
+    box-shadow: var(--card-shadow);
+    border: 2px solid var(--card-border);
     padding: 4px;
     border-radius: 4px;
+    backdrop-filter: blur(var(--card_filter));
+    -webkit-backdrop-filter: blur(var(--card_filter));
 }
