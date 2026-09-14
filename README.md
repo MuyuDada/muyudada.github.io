@@ -6,7 +6,7 @@
 
 永远相信美好的事情即将发生 ————
 
-个人主页源码,基于 [zyyo.net](https://zyyo.net) 模板魔改,纯静态页面,无需构建。
+个人主页源码,基于 [zyyo.cc](https://zyyo.cc) 模板魔改,纯静态页面,无需构建。
 
 在线访问:[https://muyudada.github.io](https://muyudada.github.io)
 
@@ -87,7 +87,7 @@ docker compose up -d
 
 ## 🙏 鸣谢
 
-- [zyyo.net](https://zyyo.net) — 页面模板
+- [zyyo.cc](https://zyyo.cc) — 页面模板
 - [APlayer](https://github.com/DIYgod/APlayer) & [Meting](https://github.com/metowolf/Meting) — 音乐播放与解析
 - [Hitokoto 一言](https://hitokoto.cn) — 一言数据
 - [Open-Meteo](https://open-meteo.com) — 天气与空气质量数据
