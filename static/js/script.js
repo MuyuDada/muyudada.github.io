@@ -27,21 +27,50 @@ var weatherConfig = {
     ipApi: "https://v2.xxapi.cn/api/ip"
 };
 
+function timePeriodText(hour) {
+    if (hour < 5) {
+        return "凌晨";
+    }
+    if (hour < 9) {
+        return "早上";
+    }
+    if (hour < 12) {
+        return "上午";
+    }
+    if (hour < 14) {
+        return "中午";
+    }
+    if (hour < 18) {
+        return "下午";
+    }
+    if (hour < 19) {
+        return "傍晚";
+    }
+    return "晚上";
+}
+
 function updateLocalTime() {
-    var timeElement = document.getElementById("local-time");
+    var timeElement = document.getElementById("local-time-main");
+    var secondsElement = document.getElementById("local-time-seconds");
+    var periodElement = document.getElementById("time-period");
     var dateElement = document.getElementById("local-date");
 
     if (!timeElement || !dateElement) {
         return;
     }
 
+    var pad = function (value) {
+        return String(value).padStart(2, "0");
+    };
     var now = new Date();
-    timeElement.textContent = now.toLocaleTimeString("zh-CN", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-    });
+
+    timeElement.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    if (secondsElement) {
+        secondsElement.textContent = ":" + pad(now.getSeconds());
+    }
+    if (periodElement) {
+        periodElement.textContent = timePeriodText(now.getHours());
+    }
     dateElement.textContent = now.toLocaleDateString("zh-CN", {
         year: "numeric",
         month: "long",

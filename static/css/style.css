@@ -632,18 +632,70 @@ body {
     font-size: 13px;
 }
 
-.local-time {
-    margin-top: 5px;
-    font-family: "a", sans-serif;
-    font-size: 27px;
+.time-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 26px;
+}
+
+.time-period {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--purple_text_color) 16%, transparent);
+    color: var(--purple_text_color);
+    font-size: 11px;
     letter-spacing: 1px;
 }
 
+.time-period-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: timePeriodPulse 2s ease-in-out infinite;
+}
+
+.local-time {
+    display: flex;
+    align-items: baseline;
+    margin-top: 6px;
+    color: var(--main_text_color);
+    font-family: "b", "a", sans-serif;
+    font-size: 31px;
+    line-height: 1.15;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+}
+
+.local-time-seconds {
+    margin-left: 2px;
+    color: var(--purple_text_color);
+    font-size: 15px;
+    opacity: 0.9;
+}
+
 .local-date {
-    margin-top: 3px;
+    margin-top: 5px;
     color: var(--item_left_text_color);
     font-size: 12px;
     font-family: "a", sans-serif;
+    letter-spacing: 0.5px;
+}
+
+@keyframes timePeriodPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.3;
+        transform: scale(0.7);
+    }
 }
 
 .weather-divider {
