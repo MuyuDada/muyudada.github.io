@@ -664,7 +664,7 @@ body {
     align-items: baseline;
     margin-top: 6px;
     color: var(--main_text_color);
-    font-family: "b", "a", sans-serif;
+    font-family: "a", sans-serif;
     font-size: 31px;
     line-height: 1.15;
     letter-spacing: 1px;
@@ -687,7 +687,9 @@ body {
 }
 
 @keyframes timePeriodPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
         transform: scale(1);
     }
@@ -719,6 +721,7 @@ body {
     align-items: center;
     gap: 7px;
     font-size: 14px;
+    font-family: "a" !important;
 }
 
 .weather-main .weather-icon {
