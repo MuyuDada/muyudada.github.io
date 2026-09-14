@@ -348,6 +348,32 @@ updateLocalTime();
 window.setInterval(updateLocalTime, 1000);
 loadBrowserWeather();
 
+// 网站运行时间：修改这里即可更换建站起始时间（当前对应时间线里的“本站搭建成功 2026.9”）。
+var siteStartTime = new Date("2026-09-01T00:00:00+08:00");
+
+function updateSiteRuntime() {
+    var runtimeElement = document.getElementById("site-runtime");
+
+    if (!runtimeElement) {
+        return;
+    }
+
+    var elapsed = Date.now() - siteStartTime.getTime();
+    if (elapsed < 0) {
+        elapsed = 0;
+    }
+
+    var days = Math.floor(elapsed / 86400000);
+    var hours = Math.floor(elapsed / 3600000) % 24;
+    var minutes = Math.floor(elapsed / 60000) % 60;
+    var seconds = Math.floor(elapsed / 1000) % 60;
+
+    runtimeElement.textContent = days + " 天 " + hours + " 时 " + minutes + " 分 " + seconds + " 秒";
+}
+
+updateSiteRuntime();
+window.setInterval(updateSiteRuntime, 1000);
+
 var weatherToggle = document.getElementById("weather-toggle");
 var weatherForecast = document.getElementById("weather-forecast");
 if (weatherToggle && weatherForecast) {
