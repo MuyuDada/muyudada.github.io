@@ -634,7 +634,7 @@ body {
 
 .local-time {
     margin-top: 5px;
-    font-family: "b", sans-serif;
+    font-family: "a", sans-serif;
     font-size: 27px;
     letter-spacing: 1px;
 }
@@ -643,6 +643,7 @@ body {
     margin-top: 3px;
     color: var(--item_left_text_color);
     font-size: 12px;
+    font-family: "a", sans-serif;
 }
 
 .weather-divider {
