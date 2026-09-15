@@ -11,7 +11,7 @@ console.log('  %c/______\\', 'color: #8B4513; font-size: 20px;');
 var musicPlaylistConfig = {
     server: "netease",
     type: "playlist",
-    id: "7088182166",
+    id: "3778678",
     api: "https://api.injahow.cn/meting/",
     listMaxHeight: "180px"
 };
@@ -864,8 +864,12 @@ if (window.localStorage.getItem("fpson") == undefined || window.localStorage.get
                 var kd = `<span style="color:#9338e6">不太流畅🙄</span>`
             } else if (fps <= 45) {
                 var kd = `<span style="color:#08b7e4">还不错哦😁</span>`
-            } else {
+            } else if (fps <= 55) {
                 var kd = `<span style="color:#39c5bb">十分流畅🤣</span>`
+            } else if (fps <= 60) {
+                var kd = `<span style="color:#00ff00">极致流畅✈</span>`
+            } else {
+                var kd = `<span style="color:#00ff00">直接起飞🚀</span>`
             }
             document.getElementById("fps").innerHTML = `FPS:${fps} ${kd}`;
             frame = 0;
