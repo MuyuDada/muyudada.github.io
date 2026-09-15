@@ -318,13 +318,33 @@ body {
     text-align: right;
 }
 
+/* 手写签名视频卡片：视频本身是黑底白字，用深色底卡衬托 */
+.signature-card {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    margin: 20px 0 0;
+    padding: 8px;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    background: #06070b;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+}
+
+.signature-card video {
+    display: block;
+    width: 100%;
+    border-radius: 10px;
+}
+
 .music-card {
     position: absolute;
     top: 30px;
     right: 0;
     z-index: 3;
-    width: 300px;
-    padding: 14px 14px 12px;
+    width: 336px;
+    padding: 16px 16px 14px;
     border: 1px solid var(--card-border);
     border-radius: 16px;
     background: var(--item_bg_color);
@@ -354,125 +374,159 @@ body {
 /* 封面与信息左右分栏 */
 .music-card .aplayer .aplayer-body {
     display: grid;
-    grid-template-columns: 62px minmax(0, 1fr);
-    column-gap: 12px;
+    grid-template-columns: 76px minmax(0, 1fr);
+    column-gap: 14px;
     align-items: start;
 }
 
 .music-card .aplayer .aplayer-pic {
     grid-row: 1;
-    width: 62px;
-    height: 62px;
+    width: 76px;
+    height: 76px;
     flex: none;
-    border-radius: 14px;
+    border-radius: 16px;
     box-shadow: 0 4px 12px rgba(20, 40, 60, 0.28);
 }
 
+/* 封面上的播放/暂停按钮放大，更好按 */
 .music-card .aplayer .aplayer-pic .aplayer-button {
     background: rgba(0, 0, 0, 0.35);
 }
 
+.music-card .aplayer .aplayer-pic .aplayer-play {
+    width: 34px;
+    height: 34px;
+    border: 2px solid #fff;
+    margin: 0 -19px -19px 0;
+}
+
+.music-card .aplayer .aplayer-pic .aplayer-play svg {
+    top: 4px;
+    left: 5px;
+    width: 26px;
+    height: 26px;
+}
+
+.music-card .aplayer .aplayer-pic .aplayer-pause {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #fff;
+    bottom: 6px;
+    right: 6px;
+}
+
+.music-card .aplayer .aplayer-pic .aplayer-pause svg {
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+}
+
 .music-card .aplayer .aplayer-info {
-    min-width: 0;
-    height: auto;
-    margin-left: 0;
-    padding: 0;
-    border: 0;
+    display: contents;
 }
 
 .music-card .aplayer .aplayer-music {
+    grid-column: 2;
+    align-self: center;
     height: auto;
     margin: 2px 0 6px;
     padding: 0;
 }
 
-.music-card .aplayer .aplayer-title {
+.music-card .aplayer .aplayer-info .aplayer-music .aplayer-title {
     color: var(--music-text);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
 }
 
-.music-card .aplayer .aplayer-author {
+.music-card .aplayer .aplayer-info .aplayer-music .aplayer-author {
     color: var(--music-muted);
-    font-size: 11px;
+    font-size: 12px;
 }
 
-/* 控制区：进度条在上，时间与按钮在下 */
-.music-card .aplayer .aplayer-controller {
+/* 控制区：横跨整卡宽度，进度条在上，时间与按钮在下 */
+.music-card .aplayer .aplayer-info .aplayer-controller {
     position: static;
+    grid-column: 1 / -1;
+    grid-row: 2;
     flex-direction: column;
-    gap: 4px;
-    margin: 8px 0 0;
+    gap: 8px;
+    margin: 12px 0 0;
 }
 
-.music-card .aplayer .aplayer-bar-wrap {
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap {
     flex: none;
     margin: 0;
-    padding: 3px 0;
+    padding: 4px 0;
 }
 
-.music-card .aplayer .aplayer-bar {
-    height: 4px;
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar {
+    height: 6px;
     border-radius: 99px;
     background: var(--music-bar-track);
 }
 
-.music-card .aplayer .aplayer-loaded,
-.music-card .aplayer .aplayer-played {
-    height: 4px;
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-loaded,
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-played {
+    height: 6px;
     border-radius: 99px;
 }
 
-.music-card .aplayer .aplayer-loaded {
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-loaded {
     background: var(--music-control-bg);
 }
 
-.music-card .aplayer .aplayer-played {
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-played {
     background: var(--purple_text_color);
 }
 
-.music-card .aplayer .aplayer-thumb {
-    width: 10px;
-    height: 10px;
-    margin-top: -3px;
-    margin-right: -5px;
-    border: 2px solid var(--purple_text_color);
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-played .aplayer-thumb {
+    width: 16px;
+    height: 16px;
+    margin-top: -7px;
+    margin-right: -12px;
+    border: 2.5px solid var(--purple_text_color);
     border-radius: 50%;
     background: #ffffff;
+    transform: scale(1);
 }
 
-.music-card .aplayer .aplayer-time {
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-time {
     position: relative;
-    right: 14px !important;
+    right: 0;
     bottom: auto;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 3px;
-    height: 22px;
+    justify-content: space-between;
+    gap: 6px 8px;
+    height: auto;
     padding-left: 0;
     color: var(--music-muted);
-    font-size: 11px;
+    font-size: 12.5px;
 }
 
-.music-card .aplayer .aplayer-time-inner {
-    flex: 1 1 auto;
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-time .aplayer-time-inner {
+    flex: 1 1 100%;
     min-width: 0;
-    margin-right: 4px;
+    height: 18px;
+    margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.music-card .aplayer .aplayer-time .aplayer-icon {
+.music-card .aplayer .aplayer-info .aplayer-controller .aplayer-time .aplayer-icon {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
     flex: none;
-    width: 22px;
-    height: 22px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     border: 0;
-    border-radius: 7px;
+    border-radius: 9px;
     color: var(--music-control-text) !important;
     background: var(--music-control-bg);
     opacity: 1 !important;
@@ -485,8 +539,8 @@ body {
 }
 
 .music-card .aplayer .aplayer-time .aplayer-icon svg {
-    width: 13px;
-    height: 13px;
+    width: 16px;
+    height: 16px;
 }
 
 .music-card .aplayer .aplayer-time .aplayer-icon svg path {
