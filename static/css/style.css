@@ -364,7 +364,7 @@ body {
 .music-card .aplayer {
     margin: 0;
     color: var(--music-text);
-    font-family: "b", "a", sans-serif;
+    font-family: "a", sans-serif;
     background: transparent;
     box-shadow: none;
     border-radius: 0;
