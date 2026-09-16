@@ -11,7 +11,6 @@
 	<meta name="description" content="永远相信美好的事情即将发生————">
 	<meta name="keywords" content="Muyuの主页">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-	<link rel="stylesheet" href="https://unpkg.com/aplayer@1.10.1/dist/APlayer.min.css">
 	<link rel="stylesheet" href="./static/css/style.css">
 	<link rel="stylesheet" href="./static/css/root.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css">
@@ -141,8 +140,86 @@
 				</div>
 				<div class="music-card">
 					<div class="music-card-title">音乐</div>
-					<div id="music-player"></div>
-					<div id="music-player-status" class="music-player-status" aria-live="polite">正在加载歌单...</div>
+					<div id="music-widget" class="music-widget">
+						<div class="mw-top">
+							<div class="mw-cover">
+								<i class="fa-solid fa-music mw-cover-placeholder" aria-hidden="true"></i>
+								<img id="mw-cover-img" class="mw-cover-img" src="" alt="封面">
+							</div>
+							<div class="mw-info">
+								<div class="mw-title-row">
+									<div class="mw-title-wrap">
+										<h3 id="mw-title" class="mw-title">音乐</h3>
+									</div>
+									<button id="mw-lrc-toggle" class="mw-icon-btn mw-btn-lrc" type="button" title="歌词"
+										aria-label="歌词" aria-expanded="false">
+										<i class="fa-regular fa-closed-captioning" aria-hidden="true"></i>
+									</button>
+								</div>
+								<p id="mw-artist" class="mw-artist">暂未播放</p>
+								<div class="mw-meta-row">
+									<div class="mw-time" aria-live="polite">
+										<span id="mw-time-current">0:00</span>
+										<span class="mw-time-sep" aria-hidden="true">/</span>
+										<span id="mw-time-total">0:00</span>
+									</div>
+									<div class="mw-volume-area">
+										<button id="mw-mute" class="mw-icon-btn mw-btn-mute" type="button" title="静音"
+											aria-label="静音">
+											<i class="fa-solid fa-volume-high mw-icon-vol" aria-hidden="true"></i>
+											<i class="fa-solid fa-volume-xmark mw-icon-mute" aria-hidden="true" hidden></i>
+										</button>
+										<div id="mw-volume" class="mw-volume-track" role="slider" aria-label="音量"
+											aria-valuemin="0" aria-valuemax="100" aria-valuenow="70">
+											<div id="mw-volume-bar" class="mw-volume-bar" style="width: 70%;"></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div id="mw-progress" class="mw-progress" role="slider" aria-label="播放进度" aria-valuemin="0"
+							aria-valuemax="100" aria-valuenow="0" tabindex="0">
+							<div id="mw-progress-bar" class="mw-progress-bar" style="width: 0%;"></div>
+							<div class="mw-progress-thumb" aria-hidden="true"></div>
+						</div>
+						<div class="mw-controls">
+							<button id="mw-mode" class="mw-icon-btn mw-btn-mode" type="button" title="切换播放模式"
+								aria-label="切换播放模式">
+								<i class="fa-solid fa-repeat mw-icon-repeat" aria-hidden="true"></i>
+								<span class="mw-repeat-one-badge" aria-hidden="true">1</span>
+								<i class="fa-solid fa-shuffle mw-icon-shuffle" aria-hidden="true" hidden></i>
+							</button>
+							<button id="mw-prev" class="mw-icon-btn mw-btn-skip" type="button" title="上一首"
+								aria-label="上一首">
+								<i class="fa-solid fa-backward-step" aria-hidden="true"></i>
+							</button>
+							<button id="mw-play" class="mw-play-btn" type="button" title="播放" aria-label="播放">
+								<i class="fa-solid fa-play mw-icon-play" aria-hidden="true"></i>
+								<i class="fa-solid fa-pause mw-icon-pause" aria-hidden="true" hidden></i>
+							</button>
+							<button id="mw-next" class="mw-icon-btn mw-btn-skip" type="button" title="下一首"
+								aria-label="下一首">
+								<i class="fa-solid fa-forward-step" aria-hidden="true"></i>
+							</button>
+							<button id="mw-list-toggle" class="mw-icon-btn mw-btn-list" type="button" title="列表"
+								aria-label="列表" aria-expanded="false">
+								<i class="fa-solid fa-list-ul" aria-hidden="true"></i>
+							</button>
+						</div>
+						<div id="mw-lrc-drawer" class="mw-drawer">
+							<div class="mw-drawer-inner">
+								<div id="mw-lrc" class="mw-lrc" role="listbox" aria-label="歌词">
+									<div class="mw-lrc-empty">暂无歌词</div>
+								</div>
+							</div>
+						</div>
+						<div id="mw-list-drawer" class="mw-drawer">
+							<div class="mw-drawer-inner">
+								<div id="mw-playlist" class="mw-playlist" role="listbox" aria-label="播放列表"></div>
+							</div>
+						</div>
+						<div id="music-player-status" class="music-player-status" aria-live="polite">正在加载歌单...</div>
+					</div>
 				</div>
 
 				<div class="iconRow">
@@ -302,7 +379,6 @@
 
 	</div>
 </body>
-<script src="https://unpkg.com/aplayer@1.10.1/dist/APlayer.min.js"></script>
 <script src="./static/js/script.js"> </script>
 <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
 <script>LA.init({ id: "KFqltKSkJgQTGD9l", ck: "KFqltKSkJgQTGD9l" })</script>
