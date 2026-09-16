@@ -12,7 +12,7 @@ var musicPlaylistConfig = {
     server: "netease",
     type: "playlist",
     id: "3778678",
-    api: "https://api.injahow.cn/meting/"
+    api: "https://api.qijieya.cn/meting/?server=:server&type=:type&id=:id"
 };
 
 // Open-Meteo 配置无需 API Key。可按需修改默认城市或直接填写经纬度。
