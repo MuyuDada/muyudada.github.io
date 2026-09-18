@@ -11,17 +11,72 @@
 	<meta name="description" content="永远相信美好的事情即将发生————">
 	<meta name="keywords" content="Muyuの主页">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<script>
+		// 首帧渲染前恢复用户主题，避免暗色用户看到白屏闪烁
+		(function () {
+			try {
+				var match = document.cookie.match(/(?:^|;\s*)themeState=(Dark|Light)/);
+				if (match && match[1] === "Dark") {
+					document.documentElement.dataset.theme = "Dark";
+				}
+			} catch (error) { }
+		})();
+	</script>
+	<!-- 预连接关键外部服务：壁纸 / 签名视频与封面 / Font Awesome / 音乐接口 -->
+	<link rel="preconnect" href="https://t.alcy.cc">
+	<link rel="preconnect" href="https://muyuimg.cc.cd">
+	<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+	<link rel="preconnect" href="https://api.qijieya.cn">
+	<link rel="dns-prefetch" href="https://raw.githubusercontent.com">
+	<link rel="dns-prefetch" href="https://count.getloli.com">
+	<link rel="dns-prefetch" href="https://v1.hitokoto.cn">
+	<link rel="dns-prefetch" href="https://api.open-meteo.com">
+	<link rel="dns-prefetch" href="https://sdk.51.la">
+	<!-- 关键字体预加载，让文字尽早以最终字体呈现 -->
+	<link rel="preload" href="./static/fonts/LXGWZhenKai.subset.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="./static/fonts/Ubuntu-Regular.woff2" as="font" type="font/woff2" crossorigin>
 	<link rel="stylesheet" href="./static/css/style.css">
 	<link rel="stylesheet" href="./static/css/root.css">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css">
+	<!-- Font Awesome 异步加载，不再阻塞首屏渲染 -->
+	<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css" as="style"
+		onload="this.onload=null;this.rel='stylesheet'">
+	<noscript>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css">
+		<style>
+			#zyyo-loading {
+				display: none !important;
+			}
+		</style>
+	</noscript>
+	<!-- 兜底：即使主脚本加载失败，加载动画也会自动消失 -->
+	<script>
+		window.setTimeout(function () {
+			var loader = document.getElementById("zyyo-loading");
+			if (loader && !loader.classList.contains("is-done")) {
+				loader.classList.add("is-done");
+			}
+		}, 6000);
+	</script>
 
 </head>
 
 <body>
 	<span id="fps"></span>
 
-	<div id="zyyo-loading">
-		<div id="zyyo-loading-center">
+	<div id="zyyo-loading" role="status" aria-label="页面正在加载">
+		<div class="loading-core">
+			<div class="loading-ring">
+				<svg viewBox="0 0 100 100" aria-hidden="true">
+					<circle class="loading-ring-track" cx="50" cy="50" r="46"></circle>
+					<circle class="loading-ring-arc" cx="50" cy="50" r="46"></circle>
+				</svg>
+				<span class="loading-logo"></span>
+			</div>
+			<div class="loading-name">Muyu</div>
+			<div class="loading-tip">永远相信美好的事情即将发生</div>
+			<div class="loading-bar" aria-hidden="true">
+				<span class="loading-bar-fill"></span>
+			</div>
 		</div>
 	</div>
 	<div class="zyyo-filter"></div>
@@ -33,7 +88,7 @@
 					src="./static/img/logokuang.png">
 			</div>
 			<div class="signature-card left-div left-des" role="img" aria-label="MuyuDada 手写签名动画">
-				<video src="https://muyuimg.cc.cd/file/blog/y296IdVu.octet-stream" type="video/quicktime" autoplay muted
+				<video src="https://muyuimg.cc.cd/file/blog/Me8XnI0a.webm" type="video/quicktime" autoplay muted
 					playsinline preload="auto"></video>
 			</div>
 			<div class="left-div left-des">
@@ -277,12 +332,13 @@
 						</div>
 					</div>
 				</div>
-				<div class=""><img src="https://count.getloli.com/get/@:muyu?theme=rule34" alt="访问统计" />
+				<div class=""><img src="https://count.getloli.com/get/@:muyu?theme=rule34" alt="访问统计" loading="lazy"
+						decoding="async" />
 				</div>
 				<div class="tanChiShe">
 					<img id="tanChiShe"
 						src="https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake.svg"
-						alt="GitHub contributions snake">
+						alt="GitHub contributions snake" loading="lazy" decoding="async">
 				</div>
 			</header>
 
@@ -300,7 +356,7 @@
 							<p>记录折腾的日常</p>
 						</div>
 						<div class="projectItemRight">
-							<img src="./static/img/i1.png" alt="">
+							<img src="./static/img/i1.png" alt="" loading="lazy" decoding="async">
 						</div>
 
 					</a><a class="projectItem a" target="_blank" href="https://muyuimg.cc.cd/">
@@ -309,7 +365,7 @@
 							<p>存储收集好看的图片、壁纸</p>
 						</div>
 						<div class="projectItemRight">
-							<img src="./static/img/i2.png" alt="">
+							<img src="./static/img/i2.png" alt="" loading="lazy" decoding="async">
 						</div>
 
 					</a>
@@ -327,7 +383,7 @@
 							<p>魔改个人主页</p>
 						</div>
 						<div class="projectItemRight">
-							<img src="./static/img/i1.png" alt="">
+							<img src="./static/img/i1.png" alt="" loading="lazy" decoding="async">
 						</div>
 
 					</a><a class="projectItem b" target="_blank" href="https://github.com/MuyuDada/Traditional-culture">
@@ -336,7 +392,7 @@
 							<p>大一互联网大赛项目</p>
 						</div>
 						<div class="projectItemRight">
-							<img src="./static/img/i2.png" alt="">
+							<img src="./static/img/i2.png" alt="" loading="lazy" decoding="async">
 						</div>
 
 					</a>
@@ -353,8 +409,8 @@
 					skills
 				</div>
 				<div class="skill">
-					<img id="skillPc" src="./static/svg/header.webp" alt="" srcset="">
-					<img id="skillWap" src="./static/svg/header.webp" alt="" srcset="">
+					<img id="skillPc" src="./static/svg/header.webp" alt="" loading="lazy" decoding="async">
+					<img id="skillWap" src="./static/svg/header.webp" alt="" loading="lazy" decoding="async">
 				</div>
 			</content>
 		</div>
@@ -380,8 +436,15 @@
 
 	</div>
 </body>
-<script src="./static/js/script.js"> </script>
-<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
-<script>LA.init({ id: "KFqltKSkJgQTGD9l", ck: "KFqltKSkJgQTGD9l" })</script>
+<script src="./static/js/script.js" defer></script>
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js" defer></script>
+<script>
+	// 统计脚本延迟到页面加载完成后初始化，不阻塞主流程
+	window.addEventListener('load', function () {
+		if (typeof LA !== "undefined" && LA.init) {
+			LA.init({ id: "KFqltKSkJgQTGD9l", ck: "KFqltKSkJgQTGD9l" });
+		}
+	});
+</script>
 
 </html>

@@ -1204,12 +1204,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+// ===== 全局加载动画：DOM 就绪即退出，不再等待全部外部资源 =====
 var pageLoading = document.querySelector("#zyyo-loading");
-window.addEventListener('load', function() {
-    setTimeout(function () {
-        pageLoading.style.opacity = '0';
-    }, 100);
-});
+if (pageLoading) {
+    var loaderShownAt = Date.now();
+    var loaderHidden = false;
+
+    var hidePageLoader = function () {
+        if (loaderHidden) {
+            return;
+        }
+        loaderHidden = true;
+        // 最少展示 500ms，避免动画一闪而过
+        var wait = Math.max(0, 500 - (Date.now() - loaderShownAt));
+        window.setTimeout(function () {
+            pageLoading.classList.add("is-done");
+            var removeLoader = function (event) {
+                // 忽略子元素冒泡上来的 transitionend（如主题切换时的 background-color 过渡）
+                if (event && event.target !== pageLoading) {
+                    return;
+                }
+                pageLoading.style.display = "none";
+            };
+            pageLoading.addEventListener("transitionend", removeLoader);
+            window.setTimeout(removeLoader, 700);
+        }, wait);
+    };
+
+    if (document.readyState === "interactive" || document.readyState === "complete") {
+        hidePageLoader();
+    } else {
+        document.addEventListener("DOMContentLoaded", hidePageLoader);
+    }
+    window.addEventListener("load", hidePageLoader);
+    // 兜底：外部资源再卡也不会一直挡住页面
+    window.setTimeout(hidePageLoader, 4000);
+}
 
 
 
