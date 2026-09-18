@@ -448,6 +448,8 @@ body {
     background: #06070b;
     box-shadow: var(--card-shadow);
     overflow: hidden;
+    /* 屏蔽签名视频上的所有交互事件（点击/触摸/右键/长按），事件穿透到下层 */
+    pointer-events: none;
 }
 
 .signature-card video {
@@ -460,7 +462,8 @@ body {
     position: absolute;
     top: 30px;
     right: 0;
-    z-index: 3;
+    /* 高于 .iconRow 的 z-index:40，避免列表/歌词展开后图标行挡住下半部分 */
+    z-index: 50;
     width: 336px;
     padding: 16px 16px 14px;
     border: 1px solid var(--card-border);
