@@ -295,30 +295,31 @@ function loadWeatherForCity() {
 }
 
 function loadLocalWeather() {
-    fetch(weatherConfig.ipApi)
-        .then(function (response) {
-            if (!response.ok) {
-                throw new Error("IP 定位请求失败：" + response.status);
-            }
-            return response.json();
-        })
-        .then(function (data) {
-            var location = data && data.data;
-            var latitude = location && Number(location.lat);
-            var longitude = location && Number(location.lng);
-            if (!data || data.code !== 200 ||
-                !location ||
-                !Number.isFinite(latitude) ||
-                !Number.isFinite(longitude)) {
-                throw new Error("IP 定位返回内容无效");
-            }
-            loadWeather(latitude, longitude, location.address || location.ip);
-        })
-        .catch(function (error) {
-            console.error(error);
-            loadBrowserWeather();
-        });
-}
+        fetch(weatherConfig.ipApi)
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("IP 定位请求失败：" + response.status);
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                var location = data && data.data;
+                var latitude = location && Number(location.lat);
+                var longitude = location && Number(location.lng);
+                if (!data || data.code !== 200 ||
+                    !location ||
+                    !Number.isFinite(latitude) ||
+                    !Number.isFinite(longitude)) {
+                    throw new Error("IP 定位返回内容无效");
+                }
+                loadWeather(latitude, longitude, location.address || location.ip);
+            })
+            .catch(function (error) {
+                console.error(error);
+                // IP 定位失败时，回退到配置的默认城市
+                loadConfiguredWeatherLocation();
+            });
+    }
 
 function loadBrowserWeather() {
     if (!navigator.geolocation) {
