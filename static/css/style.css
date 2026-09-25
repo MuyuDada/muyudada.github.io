@@ -1162,6 +1162,17 @@ body {
     font-weight: normal;
 }
 
+/* 站点实测来源说明：明确告诉用户当前数字是气象站实测还是模式值 */
+.weather-station-note {
+    margin-bottom: 6px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    background: var(--item_bg_color);
+    color: var(--item_left_text_color);
+    font-size: 10px;
+    line-height: 1.5;
+}
+
 .weather-detail-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

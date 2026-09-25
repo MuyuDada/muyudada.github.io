@@ -1,5 +1,39 @@
+# Muyu 个人主页 — Caddy 配置
+#
+# 两部分：
+#   1. /api/weather/*  —— 反向代理中国天气网实况接口，给上游补上它要求的 Referer
+#   2. 静态站点        —— 其余路径直接托管静态文件
+#
+# ⚠️ 为什么要代理这个接口（别删这段，删了天气实况就用不了）：
+#    中国天气网 d1.weather.com.cn/sk_2d/{编码}.html 要求 Referer 的路径部分非空，
+#    否则 301 重定向到 /contacts_api.html（一个「谢绝 API 调用」页）。
+#    而 Referer 属于浏览器禁止 JS 修改的头，纯静态页面满足不了这个条件 → 只能服务端补。
+#    实测：Referer: https://www.weather.com.cn/weather/101090101.shtml → 200
+#          Referer: https://muyudada.github.io/（浏览器自动带）        → 301
+#
+# 用法：把 example.com 换成你的域名后 `docker compose up -d`。
+
 example.com {
     root * /var/www/html
     encode zstd gzip
+
+    # 天气实况反代：/api/weather/101090209 → 上游 /sk_2d/101090209.html
+    # handle_path 会自动剥掉 /api/weather 前缀，再按下面的 rewrite 拼出上游真实路径。
+    # 踩坑记录：之前漏了剥前缀这一步，上游收到 /sk_2d/api/weather/xxx.html，
+    #          直接被判 302 到 weather_error_404.html，排查了半天。
+    handle_path /api/weather/* {
+        rewrite * /sk_2d{http.request.uri.path}.html
+
+        reverse_proxy https://d1.weather.com.cn {
+            # 关键：伪造上游要求的 Referer，并保持 Host 与上游一致
+            header_up Referer "https://www.weather.com.cn/weather/index.shtml"
+            header_up Host "d1.weather.com.cn"
+
+            # 顺带把跨域与缓存头透给浏览器
+            header_down Access-Control-Allow-Origin "*"
+            header_down Cache-Control "public, max-age=600"
+        }
+    }
+
     file_server
 }
