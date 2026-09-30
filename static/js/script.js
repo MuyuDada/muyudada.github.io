@@ -371,7 +371,6 @@ function loadWeather(latitude, longitude, locationName) {
             forecastElement.innerHTML =
                 "<div class=\"weather-detail-heading\">今日天气详情" +
                 "<span>" + text + " " + icon + "</span></div>" +
-                sourceNote +
                 "<div class=\"weather-detail-grid\">" +
                 "<div class=\"weather-detail-card\"><i>🌬️</i><span><em>风力</em><b>" + windText + "</b></span></div>" +
                 "<div class=\"weather-detail-card\"><i>👁️</i><span><em>能见度</em><b>" +
@@ -409,7 +408,8 @@ function loadWeather(latitude, longitude, locationName) {
                 "<span><i>NO₂</i><b>" + formatAirValue((pollutants.no2 || {}).value, (pollutants.no2 || {}).unit) + "</b></span>" +
                 "<span><i>SO₂</i><b>" + formatAirValue((pollutants.so2 || {}).value, (pollutants.so2 || {}).unit) + "</b></span>" +
                 "<span><i>CO</i><b>" + formatAirValue((pollutants.co || {}).value, (pollutants.co || {}).unit) + "</b></span>" +
-                "</div>";
+                "</div>" +
+                sourceNote;
         })
         .catch(function (error) {
             console.error(error);

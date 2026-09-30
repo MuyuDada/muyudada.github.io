@@ -1351,10 +1351,11 @@ content {
     font-weight: normal;
 }
 
-/* 数据来源说明：和风要求标注来源，但 attributions 给的是长 URL，
+/* 数据来源说明：位于整块天气详情的最下方。
+   和风要求标注来源，但 attributions 给的是长 URL，
    必须允许任意位置断行，否则会撑破 222px 的卡片宽度。 */
 .weather-station-note {
-    margin-bottom: var(--sp-1);
+    margin-top: var(--sp-2);
     padding: 4px 7px;
     border-radius: var(--r-xs);
     background: var(--item_hover_color);
