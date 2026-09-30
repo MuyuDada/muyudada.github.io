@@ -360,11 +360,11 @@ function loadWeather(latitude, longitude, locationName) {
                 sourceNote += attributions.map(function (item) {
                     var text = String(item);
                     return /^https?:\/\//.test(text)
-                        ? "<a href=\"" + escapeHtml(text) + "\" target=\"_blank\" rel=\"noopener noreferrer\">和风天气 QWeather</a>"
+                        ? "<a href=\"" + escapeHtml(text) + "\" target=\"_blank\" rel=\"noopener noreferrer\">和风天气</a>"
                         : escapeHtml(text);
                 }).join(" / ");
             } else {
-                sourceNote += "和风天气 QWeather";
+                sourceNote += "和风天气";
             }
             sourceNote += "</div>";
 

@@ -1355,6 +1355,7 @@ content {
    和风要求标注来源，但 attributions 给的是长 URL，
    必须允许任意位置断行，否则会撑破 222px 的卡片宽度。 */
 .weather-station-note {
+    text-align: center;
     margin-top: var(--sp-2);
     padding: 4px 7px;
     border-radius: var(--r-xs);
