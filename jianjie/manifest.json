@@ -1,0 +1,21 @@
+{
+    "name": "Muyu の 简洁主页",
+    "short_name": "Muyu",
+    "description": "永远相信美好的事情即将发生",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#222222",
+    "theme_color": "#222222",
+    "icons": [
+        {
+            "src": "static/img/favicon.gif",
+            "sizes": "720x720",
+            "type": "image/gif"
+        },
+        {
+            "src": "static/img/muyu.png",
+            "sizes": "573x573",
+            "type": "image/png"
+        }
+    ]
+}

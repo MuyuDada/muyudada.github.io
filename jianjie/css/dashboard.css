@@ -1,0 +1,418 @@
+/* ==========================================================================
+   dashboard.css —— 当地时间 + 天气预报 卡片（dark / glassy，适配 jianjie 页面）
+   说明：
+   - 所有类名一律 dw- 前缀，避免与 jianjie 现有样式冲突。
+   - .dash-card / .wide 由 main.css 提供，这里绝不重定义。
+   - 页面全局 `* { cursor: none }`，这里不设置任何 cursor 属性。
+   ========================================================================== */
+
+.dw-time-weather {
+	--dw-accent: #b39ddb;
+	--dw-heading: rgba(255, 255, 255, .5);
+	--dw-body: rgba(255, 255, 255, .6);
+	--dw-emphasis: rgba(255, 255, 255, .8);
+	--dw-hairline: #2e2e2e;
+	--dw-panel: rgba(255, 255, 255, .04);
+	--dw-panel-border: rgba(255, 255, 255, .07);
+	--dw-ease: cubic-bezier(.19, 1, .22, 1);
+	/* 详情面板内容的最大宽度：横跨整卡时靠左排布，避免宽屏被拉散 */
+	--dw-detail-width: 720px;
+	color: var(--dw-body);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+/* ---------- 顶部两栏：左时间 / 右天气 ----------
+   两列必须等宽且 gap 为 0：分隔线画在右列左边界上，
+   只有等宽 + 无 gap 时该边界才正好落在卡片几何中心。
+   列间视觉间距改由左列 padding-right / 右列 padding-left 提供。 */
+.dw-tc-layout {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0;
+}
+
+.dw-tc-col:first-child {
+	padding-right: 20px;
+}
+
+.dw-tc-col+.dw-tc-col {
+	padding-left: 20px;
+	border-left: 1px solid var(--dw-hairline);
+}
+
+/* ---------- 小标题 ---------- */
+.dw-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	min-height: 26px;
+}
+
+.dw-title {
+	color: var(--dw-heading);
+	font-size: 13px;
+	letter-spacing: .18em;
+}
+
+/* ---------- 时间 ---------- */
+.dw-period {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: rgba(179, 157, 219, .14);
+	border: 1px solid rgba(179, 157, 219, .24);
+	color: var(--dw-accent);
+	font-size: 11px;
+	letter-spacing: 1px;
+	white-space: nowrap;
+}
+
+.dw-period-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: currentColor;
+	animation: dwPeriodPulse 2s ease-in-out infinite;
+}
+
+.dw-clock {
+	display: flex;
+	align-items: baseline;
+	margin-top: 6px;
+	color: #fff;
+	font-size: 34px;
+	line-height: 1.15;
+	letter-spacing: 1px;
+	font-variant-numeric: tabular-nums;
+}
+
+.dw-clock-seconds {
+	margin-left: 2px;
+	color: var(--dw-accent);
+	font-size: 15px;
+	opacity: .9;
+}
+
+.dw-date {
+	margin-top: 5px;
+	color: var(--dw-body);
+	font-size: 12px;
+	letter-spacing: .5px;
+}
+
+/* ---------- 天气 ---------- */
+.dw-weather-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	flex: none;
+	border: 0;
+	border-radius: 50%;
+	padding: 0;
+	color: var(--dw-body);
+	background: transparent;
+	opacity: .75;
+	transition: color .18s ease, background-color .18s ease,
+		opacity .18s ease, transform .18s var(--dw-ease);
+}
+
+.dw-weather-toggle:hover {
+	color: var(--dw-accent);
+	background: var(--dw-panel);
+	opacity: 1;
+}
+
+.dw-weather-toggle-icon {
+	display: block;
+	width: 19px;
+	height: 19px;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.6;
+	transition: transform .25s ease;
+}
+
+.dw-weather-toggle[aria-expanded="true"] .dw-weather-toggle-icon {
+	transform: rotate(180deg);
+}
+
+.dw-weather-location {
+	margin-top: 4px;
+	color: var(--dw-body);
+	font-size: 12px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dw-weather-info {
+	margin-top: 8px;
+	min-height: 34px;
+}
+
+.dw-weather-info.dw-muted {
+	margin-top: 8px;
+	color: var(--dw-body);
+	font-size: 12px;
+}
+
+.dw-weather-main {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--dw-emphasis);
+}
+
+.dw-weather-icon {
+	width: 32px;
+	font-size: 27px;
+	line-height: 1;
+}
+
+.dw-weather-main strong {
+	color: #fff;
+	font-size: 28px;
+	font-weight: normal;
+	font-variant-numeric: tabular-nums;
+}
+
+.dw-weather-main span:last-child {
+	color: var(--dw-emphasis);
+	font-size: 13px;
+}
+
+/* ---------- 今日天气详情（可折叠，横跨整卡、内容靠左） ---------- */
+/* display:grid 会盖掉 hidden 属性的默认 display:none，这里补一条守卫，
+   避免脚本尚未执行时露出空面板的上边框 */
+.dw-weather-forecast[hidden] {
+	display: none;
+}
+
+.dw-weather-forecast {
+	display: grid;
+	max-height: 900px;
+	overflow: hidden;
+	gap: 5px;
+	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px solid var(--dw-hairline);
+	opacity: 1;
+	transform: translateY(0);
+	transition: max-height .32s var(--dw-ease), opacity .24s ease,
+		transform .32s var(--dw-ease), margin .32s ease, padding .32s ease;
+	/* 详情面板横跨整卡，但内容整体靠左排布，不在宽屏上被拉散 */
+	justify-items: start;
+}
+
+/* 面板内的各行统一限宽并靠左对齐 */
+.dw-weather-forecast>.dw-detail-heading,
+.dw-weather-forecast>.dw-air-title,
+.dw-weather-forecast>.dw-detail-grid,
+.dw-weather-forecast>.dw-pollutant-grid,
+.dw-weather-forecast>.dw-source-note {
+	width: 100%;
+	max-width: var(--dw-detail-width, 720px);
+}
+
+.dw-weather-forecast.dw-collapsed {
+	max-height: 0;
+	margin-top: 0;
+	padding-top: 0;
+	border-top-width: 0;
+	opacity: 0;
+	transform: translateY(-8px);
+	pointer-events: none;
+}
+
+.dw-detail-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 3px;
+	color: var(--dw-emphasis);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.dw-detail-heading span {
+	color: var(--dw-body);
+	font-size: 11px;
+	font-weight: normal;
+	white-space: nowrap;
+}
+
+.dw-detail-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 4px;
+	/* 详情面板现在横跨整卡，限制列数让内容整体靠左，不在宽屏上被拉散 */
+	max-width: 100%;
+	justify-content: start;
+}
+
+.dw-detail-card {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 30px;
+	padding: 4px 8px;
+	border-radius: 8px;
+	background: var(--dw-panel);
+	border: 1px solid var(--dw-panel-border);
+}
+
+.dw-detail-card>i {
+	display: inline-flex;
+	flex: 0 0 24px;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 8px;
+	background: rgba(179, 157, 219, .16);
+	font-size: 13px;
+	font-style: normal;
+}
+
+.dw-detail-card>span {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.dw-detail-card em {
+	color: var(--dw-body);
+	font-size: 10px;
+	font-style: normal;
+}
+
+.dw-detail-card b {
+	color: var(--dw-emphasis);
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.dw-air-title {
+	margin: 10px 0 5px;
+	color: var(--dw-emphasis);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .1em;
+}
+
+.dw-pollutant-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+	gap: 4px;
+}
+
+.dw-pollutant-grid span {
+	display: flex;
+	justify-content: space-between;
+	gap: 4px;
+	padding: 5px 8px;
+	border: 1px solid var(--dw-panel-border);
+	border-radius: 8px;
+	background: var(--dw-panel);
+	color: var(--dw-body);
+	font-size: 10px;
+}
+
+.dw-pollutant-grid i {
+	color: var(--dw-emphasis);
+	font-style: normal;
+	font-weight: 600;
+}
+
+.dw-pollutant-grid b {
+	color: var(--dw-body);
+	font-size: 10px;
+	font-weight: normal;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.dw-source-note {
+	text-align: center;
+	margin-top: 8px;
+	padding: 5px 8px;
+	border-radius: 8px;
+	background: var(--dw-panel);
+	border: 1px solid var(--dw-panel-border);
+	color: var(--dw-body);
+	font-size: 10px;
+	line-height: 1.5;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.dw-source-note a {
+	color: var(--dw-accent);
+	text-decoration: none;
+}
+
+.dw-source-note a:hover {
+	text-decoration: underline;
+}
+
+@keyframes dwPeriodPulse {
+
+	0%,
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	50% {
+		opacity: .3;
+		transform: scale(.7);
+	}
+}
+
+@media screen and (max-width: 720px) {
+	.dw-tc-layout {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 14px;
+	}
+
+	/* 单列堆叠时不再需要左右内边距（否则文字被无谓缩进） */
+	.dw-tc-col:first-child {
+		padding-right: 0;
+	}
+
+	.dw-tc-col+.dw-tc-col {
+		padding-left: 0;
+		padding-top: 14px;
+		border-left: 0;
+		border-top: 1px solid var(--dw-hairline);
+	}
+
+	.dw-clock {
+		font-size: 30px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dw-period-dot {
+		animation: none;
+	}
+
+	.dw-weather-forecast,
+	.dw-weather-toggle,
+	.dw-weather-toggle-icon {
+		transition: none;
+	}
+}

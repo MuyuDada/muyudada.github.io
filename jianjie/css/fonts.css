@@ -1,0 +1,57 @@
+/* ==========================================================================
+   fonts.css —— 主页2 字体（与主页1 static/css/style.css 的字体体系保持一致）
+   说明：
+   - 主页1 用三个 @font-face 家族：
+       "a"     中文正文（霞鹜文楷 LXGW ZhenKai）
+       "b"     英文正文（Ubuntu）
+       "title" 标题手写体（Pacifico）
+     并通过 --font-cn / --font-en / --font-title 三个变量引用。
+   - 这里复刻同一套定义，字体文件直接复用主页1 的 static/fonts/，
+     不再复制一份，避免仓库里多出 4MB 的重复字体。
+     注意路径深度：本文件在 jianjie/css/ 下，所以要退两级才到仓库根的 static/。
+   - 本文件必须排在 css/main.css 之后引入，否则覆盖不了 main.css 里的
+     `body, html { font-family: Microsoft YaHei; }`。
+   - terminal.css 的 Fira Code、Text.css 等局部字体规则优先级更高，不受影响。
+   ========================================================================== */
+
+@font-face {
+	font-family: "a";
+	src: url(../../static/fonts/LXGWZhenKai.subset.woff2) format("woff2"),
+		url(../../static/fonts/LXGWZhenKai.ttf) format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "b";
+	src: url(../../static/fonts/Ubuntu-Regular.woff2) format("woff2"),
+		url(../../static/fonts/Ubuntu-Regular.ttf) format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "title";
+	src: url(../../static/fonts/Pacifico-Regular.ttf);
+	font-display: swap;
+}
+
+/* 与主页1 static/css/style.css:35-37 完全一致 */
+:root {
+	--font-cn: "a", "b", sans-serif;
+	--font-en: "b", "a", sans-serif;
+	--font-title: "title", cursive;
+}
+
+/* 主要字体：与主页1 的 body 规则一致（主页1 用 --font-en，即
+   Ubuntu 优先、中文回退霞鹜文楷，见 static/css/style.css:254）。 */
+body,
+html {
+	font-family: var(--font-en);
+}
+
+/* 个人资料卡里的 "Muyu" 与主页1 的 Hello I' m Muyu 手写体对应
+   （主页1 由 .gradientText 使用 --font-title，见 static/css/style.css:1653）。
+   只作用于纯拉丁文案，中文标签不受影响。 */
+.dw-profile-name {
+	font-family: var(--font-title);
+	font-weight: 400;
+}

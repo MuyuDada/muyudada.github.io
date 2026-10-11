@@ -6,38 +6,99 @@
 
 永远相信美好的事情即将发生 ————
 
-个人主页源码,基于 [zyyo.cc](https://zyyo.cc) 模板魔改,纯静态页面,无需构建。
+个人主页源码,纯静态页面,无需构建,包含**两套风格迥异的主页**。
 
 在线访问:[https://muyudada.github.io](https://muyudada.github.io)
 
 </div>
 
+## 📖 项目简介
+
+一套仓库里放了两套主页,各有各的味道,右上角/卡片上互相一键切换:
+
+| 主页 | 入口 | 风格 |
+| --- | --- | --- |
+| **主页 1 · 完整版** | [`index.html`](index.html) | 基于 [zyyo.cc](https://zyyo.cc) 模板魔改。左右分栏、毛玻璃卡片、明暗主题、渐变手写标题,信息密度高 |
+| **主页 2 · 简洁版** | [`jianjie/index.html`](jianjie/index.html) | 深色卡片式 Dashboard,单列信息流 + 双列网格。纯黑灰配色 + 紫色点缀,支持 PWA 离线 |
+
+> 主页 1 的工具栏里有一枚 <kbd>✨</kbd> 按钮跳转到主页 2;主页 2 的「站点合集」首卡与**右键菜单 → 模式**可切回主页 1。
+
 ## ✨ 功能特性
 
+### 主页 1(完整版)
+
 - **一言 Hitokoto**:打字机效果逐字显示,每 20 秒自动刷新
-- **当地时间**:实时时钟 + 中文日期(含星期),每秒更新
-- **天气预报**:基于 [Open-Meteo](https://open-meteo.com),免 API Key;**自动定位访问者所在地**(浏览器 GPS → IP 定位 → 兜底城市,逐级回退);可展开今日详情(风力、能见度、体感温度、湿度、气压、空气质量、云量、紫外线、降水量、日出日落、污染物浓度);自建反代后可进一步接入**中国天气网气象站实测值**(见[气象站实测数据](#气象站实测数据可选))
-- **音乐播放器**:[APlayer](https://aplayer.js.org) + Meting API 加载网易云歌单,支持歌词与歌单面板
+- **当地时间**:实时时钟 + 中文日期(含星期)与时段问候,每秒更新
+- **天气预报**:基于[和风天气 QWeather](https://www.qweather.com),**自动定位访问者所在地**(浏览器 GPS → IP 定位 → 兜底城市,逐级回退);可展开今日详情(风力、能见度、体感温度、湿度、气压、空气质量、云量、紫外线、降水量、日出日落、污染物浓度)
+- **音乐播放器**:自研播放器(原生 Audio API)+ Meting 接口加载网易云歌单,支持歌词、播放列表、音量、播放模式
 - **主题设置**:明暗主题切换(Cookie 持久化),背景/卡片的透明度、模糊度与卡片颜色可调(localStorage 持久化)
 - **GitHub 贡献贪吃蛇**:明暗两套 SVG 随主题切换
 - **站点运行时长**:建站起每秒累计的天/时/分/秒
+- **输入特效**:输入框火焰特效 + 鼠标星尘拖尾
 - **FPS 实时显示**:页面帧率监测
-- **其他**:加载动画、图片弹窗(QQ / 赞赏码)、访客统计、时间线、个人标签、站点与项目展示、移动端响应式适配
+- **其他**:加载动画、图片弹窗(QQ / 赞赏码)、访问统计、时间线、个人标签、站点与项目展示、移动端响应式适配
+
+### 主页 2(简洁版)
+
+- **卡片式布局**:个人资料卡(头像 + 别名 + 所在地 + 座右铭 + 标签)、一言卡、时间天气卡、音乐卡、最新文章卡
+- **时间天气卡**:与主页 1 同源的定位链与和风天气数据,左右两列中间以分隔线对齐卡片几何中心
+- **音乐卡**:与主页 1 同一套播放器逻辑(歌词抽屉 / 列表抽屉展开时,同排卡片自动等高)
+- **最新文章卡**:读取本地文章快照 `data/posts.json`,条数不设上限;卡片高度固定,文章多则内部滚动
+- **终端模式**:**双击头像卡片**进入,支持 `help` / `cd` / `visit` / `douyin` 等命令
+- **右键菜单**:赞赏、全屏、刷新、返回、切换模式、联系方式、关闭
+- **随机背景**:随机背景壁纸 + 随机前景人物立绘,配合 Parallax 视差与 NodeCursor 跟随光标
+- **PWA 支持**:`manifest.json` + Service Worker 离线缓存(仅缓存本站自有资源,第三方接口/CDN 直接放行)
+- **细节**:动态网页标题(切走/切回时变化)、加载动画、进入问候弹窗、隐藏式页脚(鼠标移到底部出现)、移动端响应式
 
 ## 📁 目录结构
 
 ```text
-├── index.html            # 主页面
-├── static/
-│   ├── css/              # 样式表(style.css / root.css)
-│   ├── js/script.js      # 站点全部逻辑
-│   ├── img/              # 图片资源
-│   ├── svg/              # 贪吃蛇 SVG 等素材
-│   └── fonts/            # 自托管字体(霞鹜文楷 / Pacifico / Ubuntu)
-├── Caddyfile             # Caddy 服务器配置
-├── Dockerfile            # 基于 caddy:alpine 的镜像
-└── docker-compose.yaml   # Docker Compose 编排
+.
+├── index.html                # 主页 1(完整版)
+├── jianjie/                  # 主页 2(简洁版)
+│   ├── index.html
+│   ├── manifest.json         # PWA 清单
+│   ├── service-worker.js     # 离线缓存
+│   ├── css/
+│   │   ├── main.css          # 基础样式(卡片、标题、布局)
+│   │   ├── fonts.css         # 字体声明(复用主页 1 的字体文件)
+│   │   ├── layout.css        # 卡片式布局与新增组件样式
+│   │   ├── dashboard.css     # 时间天气卡样式
+│   │   ├── music.css         # 音乐卡样式
+│   │   └── ...               # terminal / tab / Text / Right / loading / fira_code
+│   ├── js/
+│   │   ├── dashboard.js      # 当地时间 + 天气预报
+│   │   ├── music.js          # 音乐播放器
+│   │   ├── layout.js         # 一言卡片(打字机)
+│   │   ├── rss.js            # 最新文章卡片
+│   │   ├── terminal.js       # 终端模式
+│   │   └── ...               # main / tab / Text / Right / loading / suiji-picture 等
+│   ├── data/posts.json       # 博客文章快照
+│   └── static/img/           # 主页 2 自有图片(头像、二维码、图标)
+├── static/                   # 主页 1 资源
+│   ├── css/                  # style.css / root.css(主题变量)
+│   ├── js/script.js          # 主页 1 全部逻辑
+│   ├── img/                  # 图片资源
+│   ├── svg/                  # 贪吃蛇 SVG、技能图等素材
+│   └── fonts/                # 自托管字体(霞鹜文楷 / Pacifico / Ubuntu)
+├── Caddyfile                 # Caddy 服务器配置
+├── Dockerfile                # 基于 caddy:alpine 的镜像
+└── docker-compose.yaml       # Docker Compose 编排
 ```
+
+> 两个主页**共用** `static/fonts/` 里的字体文件 —— 主页 2 的 `jianjie/css/fonts.css` 用 `../../static/fonts/` 引用,不重复占仓库体积。
+
+## 🎨 字体
+
+两套主页使用完全相同的字体体系(定义见 [`static/css/style.css`](static/css/style.css) 与 [`jianjie/css/fonts.css`](jianjie/css/fonts.css)):
+
+| 字体变量 | 字族 | 用途 |
+| --- | --- | --- |
+| `--font-cn` | `"a"` → 霞鹜文楷 LXGW ZhenKai | 中文正文 |
+| `--font-en` | `"b"` → Ubuntu | 英文与界面正文(`body` 默认) |
+| `--font-title` | `"title"` → Pacifico | 标题手写体(主页 1 的 "Hello I' m Muyu"、主页 2 的 "Muyu") |
+
+字体全部**自托管**,不依赖 Google Fonts 等外部 CDN。主页 2 的 `fonts.css` 必须排在 `main.css` **之后**引入,否则覆盖不掉 `main.css` 里的 `Microsoft YaHei`。
 
 ## 🚀 本地预览
 
@@ -46,12 +107,15 @@
 ```bash
 # 方式一:直接用浏览器打开 index.html
 
-# 方式二:起一个本地静态服务
+# 方式二:起一个本地静态服务(推荐,Service Worker / 相对路径更接近线上)
 python -m http.server 8080
-# 访问 http://localhost:8080
+# 主页 1:http://localhost:8080/
+# 主页 2:http://localhost:8080/jianjie/
 ```
 
 > 一言、天气、音乐等接口需联网才能正常加载。
+>
+> ⚠️ 主页 2 的字体路径是 `../../static/fonts/`,**必须从仓库根目录起服务**。若在 `jianjie/` 目录内起服务,`static/` 会越出文档根导致字体 404。
 
 ## 📦 部署
 
@@ -71,7 +135,9 @@ docker compose up -d
 
 ## 🔧 个性化配置
 
-主要改动集中在 [index.html](index.html) 和 [static/js/script.js](static/js/script.js):
+### 主页 1
+
+主要改动集中在 [`index.html`](index.html) 和 [`static/js/script.js`](static/js/script.js):
 
 | 配置项 | 位置 | 说明 |
 | --- | --- | --- |
@@ -80,10 +146,26 @@ docker compose up -d
 | `siteStartTime` | `static/js/script.js` | 建站起始时间(运行时长统计) |
 | 社交链接 / 时间线 / 标签 / 项目卡片 | `index.html` | 按需替换为自己的内容 |
 | 页面标题 / 描述 / 关键词 / ICP 备案号 | `index.html` | `<head>` 与 `<footer>` 中修改 |
+| 主题配色 | `static/css/root.css` | `--main_bg_color`、`--item_bg_color` 等变量 |
+
+### 主页 2
+
+| 配置项 | 位置 | 说明 |
+| --- | --- | --- |
+| `dwWeatherConfig` | `jianjie/js/dashboard.js` | 天气定位与和风天气 Key(与主页 1 同结构) |
+| `musicPlaylistConfig.id` | `jianjie/js/music.js` | 网易云歌单 ID |
+| 文章快照 | `jianjie/data/posts.json` | 最新文章卡的数据源,重新生成即可更新 |
+| 随机背景 / 前景图 | `jianjie/js/suiji-picture.js` | 两组图片 URL 数组 |
+| 社交链接 / 站点合集 / 个人项目 | `jianjie/index.html` | 按需替换 |
+| PWA 名称与图标 | `jianjie/manifest.json` | 应用名、主题色、图标 |
+| **缓存版本号** | `jianjie/service-worker.js` | 见下方注意事项 |
+
+> ⚠️ **改了主页 2 的 CSS / JS 后,必须把 `jianjie/service-worker.js` 的 `cacheName` 版本号 +1**。
+> 该 Service Worker 是 **cache-first** 且安装时预缓存全部样式与脚本,不升版本号线上用户会一直拿到旧文件。
 
 ### 天气定位说明
 
-天气默认**显示访问者所在地**，定位链为:
+天气默认**显示访问者所在地**,定位链为:
 
 ```
 浏览器 GPS(带跑偏校验) → IP 定位(多源轮询) → 兜底城市
@@ -92,7 +174,7 @@ docker compose up -d
 ```js
 var weatherConfig = {
     locationMode: "auto",        // "auto" 定位访客所在地(默认) | "fixed" 永远用兜底城市
-    fallbackCity: "city",         // 定位全部失败时的兜底城市
+    fallbackCity: "涞源",         // 定位全部失败时的兜底城市
     fallbackLatitude: 39.3602,
     fallbackLongitude: 114.6940,
     maxAutoDistanceKm: 80,       // 定位点离兜底城市超过该公里数即判定跑偏，继续往下一级回退
@@ -103,66 +185,47 @@ var weatherConfig = {
         "https://v2.xxapi.cn/api/ip",
         "https://whois.pconline.com.cn/ipJson.jsp?json=true"
     ],
-    stationApiEnabled: true,     // 是否尝试用中国天气网气象站实测数据(需自建反代，见下)
-    stationProxyPath: "/api/weather/"
+
+    // ===================== 和风天气(QWeather)=====================
+    // 认证必须走请求头 X-QW-Api-Key；旧的 ?key= 查询参数已废弃。
+    // API Host 是每个账号专属的，不是公共的 api.qweather.com
+    // (官方公告：公共地址自 2026 年起逐步停服)，换账号时这两项都要改。
+    qweatherApiKey: "你的和风天气 API Key",
+    qweatherApiHost: "https://xxxxxxxxxx.re.qweatherapi.com"
 };
 ```
 
-想固定显示某个城市，把 `locationMode` 改成 `"fixed"` 即可(不依赖任何第三方定位接口)。
+想固定显示某个城市,把 `locationMode` 改成 `"fixed"` 即可(不依赖任何第三方定位接口)。
 
-**设计要点**(改动前请先读，都是踩过的坑):
+> ⚠️ 这是纯静态站点,Key 随仓库公开、任何人可见并可消耗你的额度。如需保密,必须改成自建后端代理,把 Key 留在服务端。
 
-1. **取数只用坐标，不用地名反查。** 地名仅用于显示。Open-Meteo 的中文地名库不可靠 —— 实测「保定」会命中云南的一个村,「涞源县」则完全查不到。
+**设计要点**(改动前请先读,都是踩过的坑):
+
+1. **取数只用坐标,不用地名反查。** 地名仅用于显示。中文地名库不可靠 —— 实测「保定」会命中云南的一个村,「涞源县」则完全查不到。和风 v1 直接吃经纬度,同样不需要反查。
 2. **IP 定位必须多源轮询。** 国内宽带 IP 归属地会跨市漂移,实测同一个 IP 被不同 IP 库分别解析成涞源 / 保定 / 石家庄 / 承德(跨度 300 km)。任一源异常/超时都自动切下一个源。
 3. **电脑端浏览器 GPS 其实是 WiFi 定位库**,经常偏到隔壁市,所以用 `maxAutoDistanceKm` 做距离校验,跑偏就忽略并改走 IP 定位。
 4. **所有定位请求都必须带超时**,且整条链要有总时限 —— 否则接口挂住不返回时,页面会一直停在「正在定位...」。
 5. 定位类接口偶发失败是常态,所以任何一级都不能是单点,最后一定要能回退到兜底城市。
 
-### 气象站实测数据(可选)
-
-Open-Meteo 在中国的 `current` 是**模式插值,不是实测** —— 中国区 `best_match` 走 ECMWF IFS 0.25°(约 25 km),
-且未同化国内站点观测,所以会出现「气象台在下雨、页面显示晴」这类偏差。
-
-要拿到**真实气象站实测值**(温度、天气现象、风向风力、能见度、湿度、站点气压、AQI),
-可以自建一层反向代理接[中国天气网](https://www.weather.com.cn)的站点接口:
-
-```
-https://d1.weather.com.cn/sk_2d/{站点编号}.html   →   var dataSK={...}
-```
-
-**为什么必须自建反代**:该接口按 `Referer` 校验来源,且只认 `www.weather.com.cn`。
-而 `Referer` 属于浏览器**禁止 JS 修改**的头部,纯静态托管(GitHub Pages)**无法**直接调用 —— 
-只有走自建服务器加反代才能补上这个头。`Caddyfile` 里已给出现成配置:
-
-```caddyfile
-handle_path /api/weather/* {
-    rewrite * /sk_2d{http.request.uri.path}.html
-    reverse_proxy https://d1.weather.com.cn {
-        header_up Referer "https://www.weather.com.cn/weather/index.shtml"
-        header_up Host "d1.weather.com.cn"
-        header_down Access-Control-Allow-Origin "*"
-    }
-}
-```
-
-配置好后页面会自动探测(`probeStationApi`)、按访问者坐标匹配最近的县级站点
-(`stationProvinces` 省份边界框 + `stationCoords` 1325 个站点坐标取球面最近)、
-取其实测值覆盖 Open-Meteo 的对应字段,并在详情里标注
-「🛰️ 实况来自「XX」气象站实测 · HH:MM 观测」。
-
-未自建反代 / 接口异常时会**静默降级**,继续显示 Open-Meteo 数据,不会报错也不会留空。
-
 ## 🧰 技术栈
 
-原生 HTML / CSS / JavaScript,无框架、无构建工具;音乐播放使用 APlayer(CDN 引入),字体全部自托管。
+原生 HTML / CSS / JavaScript,**无框架、无构建工具**,克隆下来就能跑。
+
+- **音乐**:原生 `Audio` API + [Meting](https://github.com/metowolf/Meting) 接口解析网易云歌单(主页 1、主页 2 共用同一套逻辑)
+- **图标**:Font Awesome 7(CDN,主页 1 异步加载不阻塞首屏)
+- **字体**:全部自托管(霞鹜文楷 / Pacifico / Ubuntu)
+- **天气**:和风天气 QWeather v1 API
+- **PWA**:主页 2 使用 Service Worker + Web App Manifest
+- **部署**:GitHub Pages 或 Caddy + Docker
 
 ## 🙏 鸣谢
 
-- [zyyo.cc](https://zyyo.cc) — 页面模板
-- [APlayer](https://github.com/DIYgod/APlayer) & [Meting](https://github.com/metowolf/Meting) — 音乐播放与解析
+- [zyyo.cc](https://zyyo.cc) — 主页 1 页面模板
+- [Meting](https://github.com/metowolf/Meting) — 音乐接口解析
 - [Hitokoto 一言](https://hitokoto.cn) — 一言数据
-- [Open-Meteo](https://open-meteo.com) — 天气与空气质量数据
-- [中国天气网](https://www.weather.com.cn) — 气象站实测数据(可选,需自建反代)
+- [和风天气 QWeather](https://www.qweather.com) — 天气与空气质量数据
+- [NodeCursor](https://github.com/hmongouachon/NodeCursor) — 主页 2 光标跟随效果
+- [霞鹜文楷 LXGW WenKai](https://github.com/lxgw/LxgwWenKai) — 中文字体
 
 ---
 

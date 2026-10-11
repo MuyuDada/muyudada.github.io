@@ -60,8 +60,7 @@
 	<!-- 输入特效：必须加 defer。这两个脚本在加载时就要往 document.body 挂画布、
 	     并在 body 上绑事件，放在 head 里同步执行会因 body 尚未生成而报错失效；
 	     defer 让它们等 DOM 解析完再按顺序执行，同时也避免阻塞首屏渲染 -->
-	<script defer
-		src="https://cdn.jsdelivr.net/gh/huangwb8/bloghelper@latest/js/input-with-fire.js"></script>
+	<script defer src="https://cdn.jsdelivr.net/gh/huangwb8/bloghelper@latest/js/input-with-fire.js"></script>
 	<script defer
 		src="https://cdn.jsdelivr.net/gh/huangwb8/bloghelper@latest/mouse/halo-dream/fairyDustCursor.min.js"></script>
 
@@ -152,6 +151,7 @@
 				</div>
 			</div>
 			<div class="left-div left-time">
+				<div class="hitokoto-label">TimeLine</div>
 				<ul id="line">
 					<li>
 						<div class="focus"></div>
@@ -340,6 +340,12 @@
 								<input id="card-color" type="color" value="#eff6fc">
 							</label>
 						</div>
+					</div>
+					<div class="theme-settings">
+						<a class="theme-settings-toggle" href="./jianjie/index.html" title="切换到简洁风格主页"
+							style="display:flex;align-items:center;justify-content:center;text-decoration:none;">
+							<i class="fa-solid fa-wand-magic-sparkles"></i>
+						</a>
 					</div>
 				</div>
 				<div class=""><img src="https://count.getloli.com/get/@:muyu?theme=rule34" alt="访问统计" loading="lazy"

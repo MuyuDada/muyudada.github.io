@@ -1,0 +1,456 @@
+/* ==========================================================================
+   layout.css —— jianjie 主页布局调整 + 新增卡片组件样式
+   说明：
+   - 所有新增组件类名一律 dw- 前缀，避免与 main.css / tab.css 等冲突。
+   - 本文件同时负责把 .main 的内容列放宽，让 dashboard 网格与社交网格有呼吸感。
+   ========================================================================== */
+
+/* ---------- 主内容列放宽（原 990px / padding-right 330px） ---------- */
+.main {
+	width: min(1180px, 100%);
+	padding: 30px clamp(240px, 26vw, 360px) 5px clamp(20px, 2.5vw, 40px);
+	background: linear-gradient(to right,
+			rgba(34, 34, 34, 0.88) 0%,
+			rgba(34, 34, 34, 0.85) calc(100% - 340px),
+			rgba(34, 34, 34, 0) 100%);
+}
+
+/* ---------- 区块间距统一 ----------
+   规则：卡片与卡片之间 20px，带 .chtitle 的区块（社交媒体 / 站点合集 /
+   个人项目）之间 30px。
+   .about 包住 #clear 与一言卡，而 .dash-grid 在 .about 之外，
+   所以一言卡与 .dash-grid 的间距必须由 .about 的 margin-bottom 提供
+   （#clear 的 margin-bottom 只管资料卡到一言卡这一段）。 */
+.about {
+	margin-bottom: 20px;
+}
+
+/* 两个 .work 区块（站点合集 / 个人项目）之间原本贴合，补 30px */
+.work+.work {
+	margin-top: 30px;
+}
+
+/* ==========================================================================
+   个人资料卡（原 #clear 自我介绍区）重设计
+   - 头像改为圆角方形容器，不再用渐隐长条
+   - 标签卡取消，标签并入本卡底部
+   - 卡片高度由内容决定；#terminal 用同一高度变量，保证双击切换时高度不跳
+   ========================================================================== */
+#clear {
+	--dw-profile-h: 258px;
+	display: flex;
+	align-items: center;
+	gap: 22px;
+	height: auto;
+	min-height: var(--dw-profile-h);
+	padding: 24px;
+}
+
+#avatar {
+	position: static;
+	flex: 0 0 150px;
+	width: 150px;
+	height: 150px;
+	min-height: 0;
+	align-self: center;
+	border-radius: 24px;
+	background-color: rgba(255, 255, 255, .03);
+	border: 1px solid rgba(255, 255, 255, .07);
+	background-size: 82%;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-image: url(../static/img/avatar.png);
+	box-shadow: 0 10px 30px -14px rgba(0, 0, 0, .85);
+}
+
+#persontag {
+	position: static;
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+	padding: 0;
+	line-height: 1.5;
+	font-size: 15.5px;
+	background-image: none;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+/* 终端与资料卡同高，双击切换时卡片高度不跳动 */
+#terminal {
+	height: var(--dw-profile-h);
+}
+
+/* ---------- 资料卡内容 ---------- */
+.dw-profile-head {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.dw-profile-name {
+	color: #fff;
+	font-size: 26px;
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: .04em;
+	background: linear-gradient(120deg, #ffffff 0%, #dcd0ff 48%, #b39ddb 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.dw-profile-alias {
+	color: rgba(255, 255, 255, .38);
+	font-size: 12.5px;
+	letter-spacing: .1em;
+}
+
+.dw-profile-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.dw-profile-meta-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	border-radius: 999px;
+	background-color: rgba(255, 255, 255, .04);
+	border: 1px solid rgba(255, 255, 255, .07);
+	color: rgba(255, 255, 255, .6);
+	font-size: 12.5px;
+	line-height: 1.4;
+}
+
+.dw-profile-meta-item i {
+	color: #b39ddb;
+	font-size: 11px;
+	opacity: .9;
+}
+
+.dw-profile-motto {
+	padding-left: 12px;
+	border-left: 2px solid rgba(179, 157, 219, .4);
+	color: rgba(255, 255, 255, .8);
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.dw-profile-tags {
+	margin-top: 2px;
+}
+
+/* 中等宽度（平板 / 小笔记本）：缩小头像与字号，避免资料卡被撑高 */
+@media screen and (min-width: 721px) and (max-width: 1100px) {
+	#clear {
+		--dw-profile-h: 246px;
+		gap: 18px;
+		padding: 20px;
+	}
+
+	#avatar {
+		flex-basis: 124px;
+		width: 124px;
+		height: 124px;
+		border-radius: 20px;
+	}
+
+	#persontag {
+		font-size: 13.5px;
+		gap: 11px;
+	}
+
+	.dw-profile-name {
+		font-size: 22px;
+	}
+
+	.dw-profile-motto {
+		font-size: 13px;
+	}
+}
+
+/* ---------- dashboard 网格内的标题 ---------- */
+.dw-card-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 16px;
+	color: hsla(0, 0%, 100%, .5);
+	font-size: 13px;
+	letter-spacing: .2em;
+}
+
+.dw-card-title i {
+	color: #b39ddb;
+	font-size: 13px;
+	opacity: .85;
+}
+
+/* ---------- 标签卡 ---------- */
+.dw-tag-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.dw-tag {
+	padding: 6px 14px;
+	border-radius: 999px;
+	background-color: rgba(255, 255, 255, .04);
+	border: 1px solid rgba(255, 255, 255, .07);
+	color: rgba(255, 255, 255, .6);
+	font-size: 13px;
+	transition: color .3s cubic-bezier(.19, 1, .22, 1),
+		background-color .3s cubic-bezier(.19, 1, .22, 1),
+		border-color .3s cubic-bezier(.19, 1, .22, 1),
+		transform .3s cubic-bezier(.19, 1, .22, 1);
+}
+
+.dw-tag:hover,
+.dw-tag.is-focus {
+	color: #fff;
+	background-color: rgba(179, 157, 219, .16);
+	border-color: rgba(179, 157, 219, .34);
+	transform: translateY(-2px);
+}
+
+/* ---------- 时间线 / 最新文章卡 ---------- */
+/* 卡片本身是纵向 flex：标题固定，滚动层吃掉剩余高度。
+   flex-basis 取 0 让滚动层不参与卡片固有高度的计算（否则 8 篇文章会把卡片撑到
+   比同排的音乐卡还高，从而反过来撑高整行）；min-height 只作下限，保证移动端
+   单列时仍有当前观感。于是同排音乐卡因歌词/列表抽屉变高时，整行变高、本卡被
+   grid 拉伸，滚动层自动跟着展开；音乐卡收起时又自动收回。 */
+.dw-timeline {
+	display: flex;
+	flex-direction: column;
+}
+
+/* 滚动容器单独一层：竖线画在 .dw-line 上，随内容一起滚动，
+   不会被高度上限截断。
+   height:0 + flex-grow 让它的“固有高度”为 0，从而不参与卡片固有高度的计算
+   ——否则 8 篇文章的内容高度会反过来把整行撑高、把同排的音乐卡也拉长；
+   现在整行高度只由音乐卡决定，本层只是被动吃掉剩余空间。min-height 是下限，
+   保证移动端单列（没有同排卡片可撑）时仍保留原来的观感。 */
+.dw-line-scroll {
+	height: 0;
+	flex: 1 1 auto;
+	min-height: 168px;
+	max-height: none;
+	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(179, 157, 219, .45) transparent;
+}
+
+.dw-line-scroll::-webkit-scrollbar {
+	width: 4px;
+}
+
+.dw-line-scroll::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.dw-line-scroll::-webkit-scrollbar-thumb {
+	border-radius: 4px;
+	background-color: rgba(179, 157, 219, .35);
+}
+
+.dw-line-scroll:hover::-webkit-scrollbar-thumb {
+	background-color: rgba(179, 157, 219, .6);
+}
+
+.dw-line {
+	position: relative;
+	list-style: none;
+	padding-left: 20px;
+}
+
+.dw-line::before {
+	content: "";
+	position: absolute;
+	top: 6px;
+	bottom: 6px;
+	left: 4px;
+	width: 1px;
+	background: linear-gradient(to bottom,
+			rgba(179, 157, 219, .5),
+			rgba(255, 255, 255, .08));
+}
+
+.dw-line-item {
+	position: relative;
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	padding: 6px 0;
+	color: rgba(255, 255, 255, .6);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.dw-line-dot {
+	position: absolute;
+	top: 13px;
+	left: -20px;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background-color: #3c3c3c;
+	border: 2px solid #222222;
+	transition: background-color .3s cubic-bezier(.19, 1, .22, 1),
+		box-shadow .3s cubic-bezier(.19, 1, .22, 1);
+}
+
+.dw-line-text {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.dw-line-date {
+	flex: none;
+	color: rgba(255, 255, 255, .35);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
+/* 当前节点高亮 */
+.dw-line-item.is-focus .dw-line-text {
+	color: rgba(255, 255, 255, .9);
+}
+
+.dw-line-item.is-focus .dw-line-date {
+	color: #b39ddb;
+}
+
+.dw-line-item.is-focus .dw-line-dot {
+	background-color: #b39ddb;
+	box-shadow: 0 0 0 4px rgba(179, 157, 219, .18);
+}
+
+.dw-line-item:hover .dw-line-dot {
+	background-color: #b39ddb;
+}
+
+/* 最新文章：标题为链接，超长省略，悬停变亮 */
+.dw-line-text a {
+	display: block;
+	color: inherit;
+	text-decoration: none;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	transition: color .3s cubic-bezier(.19, 1, .22, 1);
+}
+
+.dw-line-text a:hover {
+	color: #fff;
+}
+
+.dw-line-item.is-focus .dw-line-text a:hover {
+	color: #b39ddb;
+}
+
+/* ---------- 一言卡 ---------- */
+.dw-hitokoto-text {
+	min-height: 22px;
+	color: rgba(255, 255, 255, .8);
+	font-size: 15px;
+	line-height: 1.7;
+	overflow-wrap: anywhere;
+}
+
+.dw-hitokoto-from {
+	margin-top: 8px;
+	color: rgba(255, 255, 255, .4);
+	font-size: 12px;
+	text-align: right;
+}
+
+/* 打字机光标 */
+.dw-hitokoto-text .dw-caret {
+	display: inline-block;
+	width: 2px;
+	height: 1em;
+	margin-left: 2px;
+	vertical-align: -2px;
+	background-color: #b39ddb;
+	animation: dwCaretBlink 1s steps(1) infinite;
+}
+
+@keyframes dwCaretBlink {
+
+	0%,
+	49% {
+		opacity: 1;
+	}
+
+	50%,
+	100% {
+		opacity: 0;
+	}
+}
+
+/* ---------- 社交 / 站点区块在更宽内容列下的微调 ---------- */
+.find a {
+	flex-basis: 170px;
+}
+
+.workbox {
+	box-shadow: inset 0 0 30px rgba(18, 18, 18);
+}
+
+/* ---------- 响应式 ---------- */
+@media screen and (max-width: 720px) {
+	.main {
+		width: 100vw;
+		padding: 20px;
+		background: rgba(32, 32, 32, 0.4);
+	}
+
+	/* 窄屏：头像改为顶部居中，文字块占满整行 */
+	#clear {
+		--dw-profile-h: auto;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 16px;
+		min-height: 0;
+		padding: 20px;
+	}
+
+	#avatar {
+		flex: 0 0 auto;
+		width: 112px;
+		height: 112px;
+		align-self: center;
+		border-radius: 20px;
+	}
+
+	#persontag {
+		width: 100%;
+		gap: 12px;
+	}
+
+	#terminal {
+		height: 260px;
+	}
+
+	.dw-profile-name {
+		font-size: 22px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dw-tag {
+		transition: none;
+	}
+
+	.dw-hitokoto-text .dw-caret {
+		animation: none;
+	}
+}
