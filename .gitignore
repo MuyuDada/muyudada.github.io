@@ -8,3 +8,6 @@ tools/report-token.local
 # wrangler 本地缓存（含账号 id，不进仓库）
 worker/.wrangler/
 .wrangler/
+
+# 本地分析笔记：只在本地留存，不随站点公开
+tonks-top-实现分析.md
