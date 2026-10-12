@@ -239,6 +239,16 @@ cd worker && wrangler deploy
 wrangler secret put REPORT_TOKEN         # 自定义一个口令
 ```
 
+> ⚠️ **不要把 `*.workers.dev` 地址填进来**。该域名在部分网络(尤其国内)会被 DNS 污染,解析到不可达的 IP,表现为「关掉代理就取不到状态」。所以 `worker/wrangler.toml` 里已经配好一条自定义域名路由,把 Worker 挂在自己已接入 Cloudflare 的域名下:
+>
+> ```toml
+> routes = [
+>   { pattern = "muyuhome.cc.cd/api/device/*", zone_name = "muyuhome.cc.cd" }
+> ]
+> ```
+>
+> 它只接管 `/api/device/*`,该域名的其他路径(整站页面)不受影响。换成自己的域名时改 `pattern` 与 `zone_name` 两处再重新 `wrangler deploy` 即可。
+
 然后把 Worker 上报地址填进 `tools/report-device.ps1` 顶部的 `$Endpoint`,口令写进 `tools/report-token.local`(该文件已在 `.gitignore` 中,不会进公开仓库;也可以改用环境变量 `MUYU_REPORT_TOKEN`)。先 `-Once` 试跑,确认无误后注册开机自启:
 
 ```powershell
@@ -250,7 +260,7 @@ powershell -ExecutionPolicy Bypass -File tools\install-device-task.ps1
 
 ```js
 var deviceStatusConfig = {
-    endpoint: "https://muyu-device-status.你的子域.workers.dev/api/device/status",
+    endpoint: "https://muyuhome.cc.cd/api/device/status",
     refreshIntervalSeconds: 30,     // 前端轮询间隔
     requestTimeoutMs: 8000,         // 单请求超时,超时按离线处理
     staleAfterSeconds: 180,         // 超过这么久没上报即判定离线

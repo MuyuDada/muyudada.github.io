@@ -17,8 +17,10 @@ param(
 )
 
 # --------------------------- 需要配置的地址与口令 ---------------------------
-# Worker 的上报地址（部署后把子域换成你自己的）
-$Endpoint = "https://muyu-device-status.2756390658.workers.dev/api/device/report"
+# Worker 的上报地址。
+# 不要用 *.workers.dev —— 该域名在部分网络下会被 DNS 污染，解析到不可达的 IP，
+# 表现为「关掉代理就上报失败」。走自己的 Cloudflare 自定义域名即可。
+$Endpoint = "https://muyuhome.cc.cd/api/device/report"
 
 # 上报口令：必须与 Worker 的 REPORT_TOKEN 一致。
 # 这个仓库是公开的，所以口令不要写死在这里，按下面的顺序查找：

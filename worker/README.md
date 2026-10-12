@@ -54,12 +54,26 @@ wrangler secret put REPORT_TOKEN
 wrangler deploy
 ```
 
-输出里会有一行 `https://muyu-device-status.<你的子域>.workers.dev`，这就是 Worker 地址。
+输出里会有一行 `https://muyu-device-status.<你的子域>.workers.dev`。
+
+> ⚠️ **不要用这个 `*.workers.dev` 地址**。该域名在部分网络（尤其国内）会被
+> DNS 污染，解析到不可达的 IP，表现为「不开代理就取不到状态 / 上报失败」。
+> 本项目的 `wrangler.toml` 已经把 Worker 挂到自己接入 Cloudflare 的域名上：
+>
+> ```toml
+> routes = [
+>   { pattern = "muyuhome.cc.cd/api/device/*", zone_name = "muyuhome.cc.cd" }
+> ]
+> ```
+>
+> 这条路由只接管 `/api/device/*`，该域名的其他路径（整站页面）不受影响。
+> 换成你自己的域名时，改这里的 `pattern` 与 `zone_name` 两处即可，
+> 然后重新 `wrangler deploy`。
 
 验证：
 
 ```bash
-curl https://muyu-device-status.<你的子域>.workers.dev/api/device/health
+curl https://muyuhome.cc.cd/api/device/health
 # → {"success":true,"service":"device-status","time":...}
 ```
 
@@ -70,7 +84,7 @@ curl https://muyu-device-status.<你的子域>.workers.dev/api/device/health
 打开 `tools/report-device.ps1`，改开头的 `$Endpoint`：
 
 ```powershell
-$Endpoint = "https://muyu-device-status.<你的子域>.workers.dev/api/device/report"
+$Endpoint = "https://muyuhome.cc.cd/api/device/report"
 ```
 
 口令**不要写进脚本**（本仓库是公开的）。改成写进 `tools/report-token.local`：
@@ -113,7 +127,7 @@ powershell -ExecutionPolicy Bypass -File tools\uninstall-device-task.ps1
 
 ```js
 var deviceStatusConfig = {
-    endpoint: "https://muyu-device-status.<你的子域>.workers.dev/api/device/status",
+    endpoint: "https://muyuhome.cc.cd/api/device/status",
     ...
 };
 ```

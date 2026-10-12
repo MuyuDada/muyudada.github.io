@@ -68,9 +68,11 @@ var weatherConfig = {
 //
 // endpoint 留空 = 未部署，整张卡片自动隐藏，不会在页面上留一块空白。
 var deviceStatusConfig = {
-    // 部署 Worker 后填这里，形如：
-    // https://muyu-device-status.你的子域.workers.dev/api/device/status
-    endpoint: "https://muyu-device-status.2756390658.workers.dev/api/device/status",
+    // Worker 读接口地址。
+    // 注意：不要用 *.workers.dev 域名 —— 该域名在部分网络下会被 DNS 污染，
+    // 解析到不可达的 IP，表现为"关掉代理就取不到状态"。这里走自己的
+    // Cloudflare 自定义域名（见 worker/wrangler.toml 里的 routes 配置）。
+    endpoint: "https://muyuhome.cc.cd/api/device/status",
 
     // 前端轮询间隔（秒）。本机 30s 上报一次，这里同步即可。
     refreshIntervalSeconds: 30,
