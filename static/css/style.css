@@ -2444,47 +2444,72 @@ footer {
 
 /* --------------------------- 电脑状态卡片 --------------------------- */
 /* 数据来自本机上报脚本 + Cloudflare Worker，见 worker/README.md。
-   没配 endpoint 时 JS 会把整张卡片隐藏，所以这里的样式只在启用后可见。 */
+   没配 endpoint 时 JS 会把整张卡片隐藏，所以这里的样式只在启用后可见。
+
+   视觉思路：状态色（在线/离开/锁屏/离线）统一收在 --device-tone 上，
+   由 data-state 一次性下发给角标、图标底衬和标题竖条，三处同色互相呼应，
+   这样一眼扫过去就能读出状态，而不用去认文字。 */
 .device-status-card[hidden] {
     display: none;
 }
 
 .device-status-card {
     --device-ok: #2fa96b;
-    --device-warn: #d69434;
-    --device-idle: #6f8299;
-    --device-off: #cc5a52;
+    --device-warn: #d68a2e;
+    --device-idle: #7a8ca3;
+    --device-off: #d0574f;
 }
 
 html[data-theme="Dark"] .device-status-card {
     --device-ok: #4fd68f;
-    --device-warn: #f0c05a;
-    --device-idle: #93a3b8;
-    --device-off: #ff7b73;
+    --device-warn: #f0bd5f;
+    --device-idle: #97a7bc;
+    --device-off: #ff7f76;
+}
+
+/* 状态色下发：角标、图标、标题竖条共用同一个 --device-tone */
+.device-status-card[data-state="online"] {
+    --device-tone: var(--device-ok);
+}
+
+.device-status-card[data-state="away"] {
+    --device-tone: var(--device-warn);
+}
+
+.device-status-card[data-state="locked"] {
+    --device-tone: var(--device-idle);
+}
+
+.device-status-card[data-state="offline"] {
+    --device-tone: var(--device-off);
 }
 
 .device-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 26px;
+    min-height: 24px;
 }
 
+/* 状态胶囊：底色/描边都从状态色里调出来，避免再维护一套配色 */
 .device-badge {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
+    gap: 6px;
+    padding: 3px 10px 3px 8px;
     border-radius: var(--r-pill);
     color: var(--device-tone, var(--device-idle));
-    background: color-mix(in srgb, var(--device-tone, var(--device-idle)) 16%, transparent);
-    border: 1px solid color-mix(in srgb, var(--device-tone, var(--device-idle)) 24%, transparent);
+    background: color-mix(in srgb, var(--device-tone, var(--device-idle)) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--device-tone, var(--device-idle)) 26%, transparent);
     font-size: 11px;
-    letter-spacing: 1px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
     transition: color var(--dur-fast) ease, background-color var(--dur-fast) ease,
         border-color var(--dur-fast) ease;
 }
 
+/* 角标自带状态色兜底，JS 只切 is-* 时也能正确上色 */
 .device-badge.is-ok {
     --device-tone: var(--device-ok);
 }
@@ -2502,12 +2527,28 @@ html[data-theme="Dark"] .device-status-card {
     --device-tone: var(--device-off);
 }
 
+/* 呼吸点：外层光晕跟着一起脉动，比纯色圆点更"活" */
 .device-badge-dot {
+    position: relative;
+    flex: none;
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: currentColor;
-    animation: timePeriodPulse 2s ease-in-out infinite;
+    animation: devicePulse 2s ease-in-out infinite;
+}
+
+@keyframes devicePulse {
+    0%,
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 currentColor;
+    }
+
+    50% {
+        opacity: 0.65;
+        box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
+    }
 }
 
 .device-body {
@@ -2517,19 +2558,27 @@ html[data-theme="Dark"] .device-status-card {
     margin-top: var(--sp-3);
 }
 
+/* 图标底衬：状态色渐变 + 内高光，和站点其他玻璃卡片的质感保持一致。
+   品牌图标（fa-brands）和通用图标（fa-solid）共用同一块底衬。 */
 .device-app-icon {
+    position: relative;
     flex: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
-    border-radius: var(--r-sm);
-    background: var(--left_tag_item);
-    border: 1px solid var(--card-border-soft);
-    color: var(--purple_text_color);
-    font-size: 18px;
-    transition: color var(--dur) var(--ease-out);
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(150deg,
+            color-mix(in srgb, var(--device-tone, var(--device-idle)) 24%, transparent),
+            color-mix(in srgb, var(--device-tone, var(--device-idle)) 7%, transparent));
+    border: 1px solid color-mix(in srgb, var(--device-tone, var(--device-idle)) 24%, transparent);
+    box-shadow: inset 0 1px 0 var(--glass-top);
+    color: var(--device-tone, var(--device-idle));
+    font-size: 19px;
+    line-height: 1;
+    transition: color var(--dur) var(--ease-out), background var(--dur) var(--ease-out),
+        border-color var(--dur) var(--ease-out);
 }
 
 .device-app-meta {
@@ -2543,12 +2592,13 @@ html[data-theme="Dark"] .device-status-card {
     font-size: 15px;
     font-weight: 600;
     line-height: 20px;
+    letter-spacing: 0.2px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .device-app-quip {
-    margin-top: 2px;
+    margin-top: 3px;
     overflow: hidden;
     color: var(--item_left_text_color);
     font-size: 12px;
@@ -2557,17 +2607,31 @@ html[data-theme="Dark"] .device-status-card {
     white-space: nowrap;
 }
 
+/* 窗口标题：不用整块底色（会显得笨重），改成左侧一道状态色竖线 */
 .device-title {
-    margin-top: var(--sp-2);
-    padding: 6px 10px;
+    position: relative;
+    margin-top: var(--sp-3);
+    padding: 1px 0 1px 10px;
     overflow: hidden;
-    border-radius: var(--r-xs);
-    background: var(--left_tag_item);
     color: var(--item_left_text_color);
     font-size: 11.5px;
     line-height: 16px;
     text-overflow: ellipsis;
     white-space: nowrap;
+    opacity: 0.8;
+}
+
+.device-title::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 2px;
+    height: 12px;
+    margin-top: -6px;
+    border-radius: 1px;
+    background: var(--device-tone, var(--device-idle));
+    opacity: 0.6;
 }
 
 .device-title[hidden] {
@@ -2587,7 +2651,7 @@ html[data-theme="Dark"] .device-status-card {
     color: var(--item_left_text_color);
     font-size: 11px;
     letter-spacing: 0.3px;
-    opacity: 0.85;
+    opacity: 0.8;
 }
 
 .device-refresh {
@@ -2603,13 +2667,13 @@ html[data-theme="Dark"] .device-status-card {
     color: var(--item_left_text_color);
     font-size: 12px;
     cursor: pointer;
-    opacity: 0.75;
+    opacity: 0.7;
     transition: color var(--dur-fast) ease, background-color var(--dur-fast) ease,
         opacity var(--dur-fast) ease;
 }
 
 .device-refresh:hover {
-    color: var(--purple_text_color);
+    color: var(--device-tone, var(--purple_text_color));
     background: var(--item_hover_color);
     opacity: 1;
 }
@@ -2624,32 +2688,23 @@ html[data-theme="Dark"] .device-status-card {
     }
 }
 
-/* 状态色渗透到图标，一眼能看出在线 / 离开 / 锁屏 / 离线 */
-.device-status-card[data-state="online"] .device-app-icon {
-    color: var(--device-ok);
-}
-
-.device-status-card[data-state="away"] .device-app-icon {
-    color: var(--device-warn);
-}
-
-.device-status-card[data-state="locked"] .device-app-icon {
-    color: var(--device-idle);
-}
-
-.device-status-card[data-state="offline"] .device-app-icon {
-    color: var(--device-off);
-}
-
+/* 离线时整体降噪，避免和"在线"抢注意力 */
 .device-status-card[data-state="offline"] .device-app-name {
     color: var(--item_left_text_color);
 }
 
+.device-status-card[data-state="offline"] .device-app-icon {
+    background: linear-gradient(150deg,
+            color-mix(in srgb, var(--device-tone) 14%, transparent),
+            transparent);
+}
+
 @media (max-width: 480px) {
     .device-app-icon {
-        width: 38px;
-        height: 38px;
-        font-size: 16px;
+        width: 40px;
+        height: 40px;
+        border-radius: 13px;
+        font-size: 17px;
     }
 }
 

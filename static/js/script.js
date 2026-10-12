@@ -81,113 +81,175 @@ var deviceStatusConfig = {
     // 页面切回前台时，距上次成功刷新超过该秒数就立刻补一次。
     visibilityRefreshAfterSeconds: 20,
 
-    // 进程名（小写）→ Font Awesome 图标
+    // 进程名（小写）→ Font Awesome 图标。
+    // 值里带上字体族：品牌图标写 "fa-brands fa-xxx"，通用图标写 "fa-solid fa-xxx"。
+    // Font Awesome 7 的品牌图标必须用 fa-brands，否则会渲染成方框或错字形。
     iconMap: {
-        code: "fa-code",
-        cursor: "fa-code",
-        devenv: "fa-code",
-        idea64: "fa-code",
-        pycharm64: "fa-code",
-        webstorm64: "fa-code",
-        goland64: "fa-code",
-        rider64: "fa-code",
-        sublime_text: "fa-code",
-        windowsterminal: "fa-terminal",
-        wt: "fa-terminal",
-        powershell: "fa-terminal",
-        pwsh: "fa-terminal",
-        cmd: "fa-terminal",
-        conhost: "fa-terminal",
-        "git-bash": "fa-terminal",
-        mintty: "fa-terminal",
-        chrome: "fa-globe",
-        msedge: "fa-globe",
-        firefox: "fa-globe",
-        brave: "fa-globe",
-        opera: "fa-globe",
-        wechat: "fa-comment-dots",
-        weixin: "fa-comment-dots",
-        qq: "fa-comment-dots",
-        tim: "fa-comment-dots",
-        dingtalk: "fa-comment-dots",
-        wework: "fa-comment-dots",
-        telegram: "fa-paper-plane",
-        discord: "fa-comment-dots",
-        feishu: "fa-comment-dots",
-        lark: "fa-comment-dots",
-        cloudmusic: "fa-music",
-        qqmusic: "fa-music",
-        spotify: "fa-music",
-        potplayer: "fa-film",
-        potplayermini64: "fa-film",
-        vlc: "fa-film",
-        mpv: "fa-film",
-        bilibili: "fa-tv",
-        steam: "fa-gamepad",
-        steamwebhelper: "fa-gamepad",
-        epicgameslauncher: "fa-gamepad",
-        genshinimpact: "fa-gamepad",
-        yuanshen: "fa-gamepad",
-        starrail: "fa-gamepad",
-        dota2: "fa-gamepad",
-        cs2: "fa-gamepad",
-        tslgame: "fa-gamepad",
-        winword: "fa-file-word",
-        excel: "fa-file-excel",
-        powerpnt: "fa-file-powerpoint",
-        onenote: "fa-note-sticky",
-        wps: "fa-file-lines",
-        et: "fa-file-excel",
-        wpp: "fa-file-powerpoint",
-        acrobat: "fa-file-pdf",
-        acrord32: "fa-file-pdf",
-        sumatrapdf: "fa-file-pdf",
-        obsidian: "fa-book",
-        typora: "fa-file-lines",
-        zotero: "fa-book",
-        photoshop: "fa-image",
-        illustrator: "fa-pen-nib",
-        figma: "fa-pen-ruler",
-        blender: "fa-cube",
-        premiere: "fa-film",
-        afterfx: "fa-wand-magic-sparkles",
-        obs64: "fa-video",
-        snippingtool: "fa-crop-simple",
-        explorer: "fa-folder-open",
-        taskmgr: "fa-gauge-high",
-        filezilla: "fa-server",
-        winscp: "fa-server",
-        putty: "fa-server",
-        mobaxterm: "fa-server",
-        xshell: "fa-server",
-        idman: "fa-download",
-        thunder: "fa-download",
-        qbittorrent: "fa-download",
-        motrix: "fa-download",
-        clash: "fa-shield-halved",
-        "clash-verge": "fa-shield-halved",
-        v2rayn: "fa-shield-halved",
-        openlist: "fa-cloud",
-        alist: "fa-cloud",
-        everything: "fa-magnifying-glass",
-        "7zfm": "fa-file-zipper",
-        winrar: "fa-file-zipper",
-        bandizip: "fa-file-zipper",
-        notepad: "fa-file-lines",
-        "notepad++": "fa-file-lines"
+        // —— 编辑器 / IDE（FA 没有 vscode 品牌图标，统一用代码图标）——
+        code: "fa-solid fa-code",
+        cursor: "fa-solid fa-code",
+        devenv: "fa-solid fa-code",
+        idea64: "fa-solid fa-code",
+        pycharm64: "fa-solid fa-code",
+        webstorm64: "fa-solid fa-code",
+        goland64: "fa-solid fa-code",
+        clion64: "fa-solid fa-code",
+        rider64: "fa-solid fa-code",
+        sublime_text: "fa-solid fa-code",
+        androidstudio64: "fa-brands fa-android",
+
+        // —— 终端 ——
+        windowsterminal: "fa-solid fa-terminal",
+        wt: "fa-solid fa-terminal",
+        powershell: "fa-solid fa-terminal",
+        pwsh: "fa-solid fa-terminal",
+        cmd: "fa-solid fa-terminal",
+        conhost: "fa-solid fa-terminal",
+        "git-bash": "fa-solid fa-terminal",
+        mintty: "fa-solid fa-terminal",
+
+        // —— 浏览器 ——
+        msedge: "fa-brands fa-edge",
+        msedgewebview2: "fa-brands fa-edge",
+        chrome: "fa-brands fa-chrome",
+        firefox: "fa-brands fa-firefox-browser",
+        brave: "fa-brands fa-brave",
+        opera: "fa-brands fa-opera",
+        safari: "fa-brands fa-safari",
+        iexplore: "fa-brands fa-internet-explorer",
+
+        // —— 通讯 / 社交 ——
+        wechat: "fa-brands fa-weixin",
+        weixin: "fa-brands fa-weixin",
+        qq: "fa-brands fa-qq",
+        tim: "fa-brands fa-qq",
+        telegram: "fa-brands fa-telegram",
+        discord: "fa-brands fa-discord",
+        skype: "fa-brands fa-skype",
+        whatsapp: "fa-brands fa-whatsapp",
+        line: "fa-brands fa-line",
+        viber: "fa-brands fa-viber",
+        dingtalk: "fa-solid fa-comment-dots",
+        wework: "fa-solid fa-comment-dots",
+        feishu: "fa-solid fa-comment-dots",
+        lark: "fa-solid fa-comment-dots",
+
+        // —— 音乐 ——
+        cloudmusic: "fa-solid fa-music",
+        qqmusic: "fa-solid fa-music",
+        spotify: "fa-brands fa-spotify",
+        itunes: "fa-brands fa-itunes",
+        foobar2000: "fa-solid fa-music",
+        aimp: "fa-solid fa-music",
+
+        // —— 影音 ——
+        potplayer: "fa-solid fa-film",
+        potplayermini64: "fa-solid fa-film",
+        vlc: "fa-solid fa-film",
+        mpv: "fa-solid fa-film",
+        bilibili: "fa-brands fa-bilibili",
+        youtube: "fa-brands fa-youtube",
+        vimeo: "fa-brands fa-vimeo",
+        twitch: "fa-brands fa-twitch",
+        obs64: "fa-solid fa-video",
+
+        // —— 游戏 ——
+        steam: "fa-brands fa-steam",
+        steamwebhelper: "fa-brands fa-steam",
+        epicgameslauncher: "fa-solid fa-gamepad",
+        genshinimpact: "fa-solid fa-gamepad",
+        yuanshen: "fa-solid fa-gamepad",
+        starrail: "fa-solid fa-gamepad",
+        dota2: "fa-solid fa-gamepad",
+        cs2: "fa-solid fa-gamepad",
+        tslgame: "fa-solid fa-gamepad",
+        unity: "fa-brands fa-unity",
+        blender: "fa-brands fa-blender",
+        xbox: "fa-brands fa-xbox",
+        playstation: "fa-brands fa-playstation",
+
+        // —— 办公 / 文档 ——
+        winword: "fa-solid fa-file-word",
+        excel: "fa-solid fa-file-excel",
+        powerpnt: "fa-solid fa-file-powerpoint",
+        onenote: "fa-solid fa-note-sticky",
+        wps: "fa-solid fa-file-lines",
+        et: "fa-solid fa-file-excel",
+        wpp: "fa-solid fa-file-powerpoint",
+        acrobat: "fa-solid fa-file-pdf",
+        acrord32: "fa-solid fa-file-pdf",
+        sumatrapdf: "fa-solid fa-file-pdf",
+        notepad: "fa-solid fa-file-lines",
+        "notepad++": "fa-solid fa-file-lines",
+        typora: "fa-solid fa-file-lines",
+        obsidian: "fa-solid fa-book",
+        zotero: "fa-solid fa-book",
+        notion: "fa-brands fa-notion",
+        trello: "fa-brands fa-trello",
+        jira: "fa-brands fa-jira",
+        confluence: "fa-brands fa-confluence",
+
+        // —— 设计 / 创作 ——
+        photoshop: "fa-solid fa-image",
+        illustrator: "fa-solid fa-pen-nib",
+        figma: "fa-brands fa-figma",
+        sketch: "fa-brands fa-sketch",
+        afterfx: "fa-solid fa-wand-magic-sparkles",
+        premiere: "fa-solid fa-film",
+
+        // —— 开发工具 ——
+        "github desktop": "fa-brands fa-github",
+        gitkraken: "fa-brands fa-git-alt",
+        sourcetree: "fa-brands fa-git-alt",
+        postman: "fa-solid fa-paper-plane",
+        docker: "fa-brands fa-docker",
+        navicat: "fa-solid fa-database",
+        dbeaver: "fa-solid fa-database",
+
+        // —— 服务器 / 网络 ——
+        filezilla: "fa-solid fa-server",
+        winscp: "fa-solid fa-server",
+        putty: "fa-solid fa-server",
+        mobaxterm: "fa-solid fa-server",
+        xshell: "fa-solid fa-server",
+        clash: "fa-solid fa-shield-halved",
+        "clash-verge": "fa-solid fa-shield-halved",
+        v2rayn: "fa-solid fa-shield-halved",
+        openlist: "fa-solid fa-cloud",
+        alist: "fa-solid fa-cloud",
+
+        // —— 下载 / 压缩 ——
+        idman: "fa-solid fa-download",
+        thunder: "fa-solid fa-download",
+        qbittorrent: "fa-solid fa-download",
+        motrix: "fa-solid fa-download",
+        "7zfm": "fa-solid fa-file-zipper",
+        winrar: "fa-solid fa-file-zipper",
+        bandizip: "fa-solid fa-file-zipper",
+
+        // —— 系统工具 ——
+        explorer: "fa-solid fa-folder-open",
+        taskmgr: "fa-solid fa-gauge-high",
+        snippingtool: "fa-solid fa-crop-simple",
+        everything: "fa-solid fa-magnifying-glass",
+        mstsc: "fa-solid fa-desktop",
+        calculator: "fa-solid fa-calculator",
+        control: "fa-solid fa-sliders",
+        windbg: "fa-solid fa-bug"
     },
 
     // 进程名没命中时，按「应用名」里的关键词兜底选图标
     keywordIcons: [
-        { match: "音乐", icon: "fa-music" },
-        { match: "浏览器", icon: "fa-globe" },
-        { match: "终端", icon: "fa-terminal" },
-        { match: "代码", icon: "fa-code" },
-        { match: "编辑器", icon: "fa-code" },
-        { match: "设计", icon: "fa-pen-ruler" },
-        { match: "表格", icon: "fa-file-excel" },
-        { match: "文档", icon: "fa-file-lines" },
-        { match: "视频", icon: "fa-film" }
+        { match: "音乐", icon: "fa-solid fa-music" },
+        { match: "浏览器", icon: "fa-solid fa-globe" },
+        { match: "终端", icon: "fa-solid fa-terminal" },
+        { match: "代码", icon: "fa-solid fa-code" },
+        { match: "编辑器", icon: "fa-solid fa-code" },
+        { match: "设计", icon: "fa-solid fa-pen-ruler" },
+        { match: "表格", icon: "fa-solid fa-file-excel" },
+        { match: "文档", icon: "fa-solid fa-file-lines" },
+        { match: "视频", icon: "fa-solid fa-film" },
+        { match: "播放", icon: "fa-solid fa-film" }
     ]
 };
 
@@ -1939,6 +2001,7 @@ function deviceStatusEls() {
             badge: document.getElementById("device-badge"),
             badgeText: document.getElementById("device-badge-text"),
             icon: document.getElementById("device-app-icon"),
+            glyph: document.getElementById("device-app-glyph"),
             appName: document.getElementById("device-app-name"),
             appQuip: document.getElementById("device-app-quip"),
             title: document.getElementById("device-title"),
@@ -1949,7 +2012,8 @@ function deviceStatusEls() {
     return deviceStatusElements;
 }
 
-// 进程名优先命中映射表，其次按应用名里的关键词兜底，最后给个通用显示器图标
+// 进程名优先命中映射表，其次按应用名里的关键词兜底，最后给个通用显示器图标。
+// 返回值形如 "fa-brands fa-edge" 或 "fa-solid fa-code"（含字体族）。
 function deviceIconFor(processName, appName) {
     var map = deviceStatusConfig.iconMap || {};
     var key = String(processName || "").toLowerCase();
@@ -1967,29 +2031,27 @@ function deviceIconFor(processName, appName) {
         }
     }
 
-    return "fa-desktop";
+    return "fa-solid fa-desktop";
 }
 
+// 把图标类写到内层 <i> 上：Font Awesome 7 的字形由 .fa-xxx 元素自己的
+// ::before{content:var(--fa)} 渲染，写在父容器上是画不出来的。
+// 外层 div.device-app-icon 只负责尺寸、底色和状态色，两者互不干扰。
 function setDeviceIcon(iconName) {
     var els = deviceStatusEls();
 
-    if (!els.icon) {
+    if (!els.glyph) {
         return;
     }
 
-    // 只替换 fa-* 类，别把 device-app-icon 一起冲掉（否则尺寸和配色全丢）
-    var kept = [];
+    // 兼容只写图标名的旧配置：补上默认字体族
+    var value = String(iconName || "");
+    var classes = value.indexOf("fa-brands") === 0 || value.indexOf("fa-solid") === 0 ||
+        value.indexOf("fa-regular") === 0
+        ? value.split(/\s+/)
+        : ["fa-solid", value];
 
-    for (var i = 0; i < els.icon.classList.length; i++) {
-        var name = els.icon.classList[i];
-
-        if (name.indexOf("fa-") !== 0) {
-            kept.push(name);
-        }
-    }
-
-    kept.push("fa-solid", iconName);
-    els.icon.className = kept.join(" ");
+    els.glyph.className = classes.filter(Boolean).join(" ");
 }
 
 function setDeviceBadge(text, tone) {
@@ -2053,7 +2115,7 @@ function renderDeviceOffline(reason) {
 
     els.card.dataset.state = "offline";
     setDeviceBadge("离线", "off");
-    setDeviceIcon("fa-power-off");
+    setDeviceIcon("fa-solid fa-power-off");
 
     if (els.appName) {
         els.appName.textContent = "电脑已离线";
