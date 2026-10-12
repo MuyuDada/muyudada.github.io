@@ -30,6 +30,7 @@
 - **一言 Hitokoto**:打字机效果逐字显示,每 20 秒自动刷新
 - **当地时间**:实时时钟 + 中文日期(含星期)与时段问候,每秒更新
 - **天气预报**:基于[和风天气 QWeather](https://www.qweather.com),**自动定位访问者所在地**(浏览器 GPS → IP 定位 → 兜底城市,逐级回退);可展开今日详情(风力、能见度、体感温度、湿度、气压、空气质量、云量、紫外线、降水量、日出日落、污染物浓度)
+- **电脑状态卡**:展示本机当前前台应用(中文名 + 吐槽文案 + 图标)、在线 / 离开 / 锁屏 / 离线状态与窗口标题。纯静态站点读不到本机信息,因此由本机 PowerShell 脚本每 30 秒上报到 Cloudflare Worker,页面只读 KV(见 [worker/README.md](worker/README.md))
 - **音乐播放器**:自研播放器(原生 Audio API)+ Meting 接口加载网易云歌单,支持歌词、播放列表、音量、播放模式
 - **主题设置**:明暗主题切换(Cookie 持久化),背景/卡片的透明度、模糊度与卡片颜色可调(localStorage 持久化)
 - **GitHub 贡献贪吃蛇**:明暗两套 SVG 随主题切换
@@ -81,6 +82,14 @@
 │   ├── img/                  # 图片资源
 │   ├── svg/                  # 贪吃蛇 SVG、技能图等素材
 │   └── fonts/                # 自托管字体(霞鹜文楷 / Pacifico / Ubuntu)
+├── worker/                   # 电脑状态中转(Cloudflare Worker + KV)
+│   ├── device-status-worker.js  # 上报 / 读取 / 探活三个接口
+│   ├── wrangler.toml         # KV 绑定与 Worker 名称
+│   └── README.md             # 部署四步 + 接口文档
+├── tools/                    # 本机上报脚本(Windows PowerShell)
+│   ├── report-device.ps1     # 取前台窗口 + 空闲时长,POST 上报
+│   ├── install-device-task.ps1   # 注册开机自启的计划任务
+│   └── uninstall-device-task.ps1 # 卸载计划任务
 ├── Caddyfile                 # Caddy 服务器配置
 ├── Dockerfile                # 基于 caddy:alpine 的镜像
 └── docker-compose.yaml       # Docker Compose 编排
@@ -143,6 +152,7 @@ docker compose up -d
 | --- | --- | --- |
 | `musicPlaylistConfig.id` | `static/js/script.js` | 网易云歌单 ID(取歌单链接中的 id) |
 | `weatherConfig` | `static/js/script.js` | 天气定位方式、兜底城市与刷新间隔(见下) |
+| `deviceStatusConfig` | `static/js/script.js` | 电脑状态卡:Worker 地址、轮询间隔、进程名→图标映射。`endpoint` 留空则整张卡片自动隐藏 |
 | `siteStartTime` | `static/js/script.js` | 建站起始时间(运行时长统计) |
 | 社交链接 / 时间线 / 标签 / 项目卡片 | `index.html` | 按需替换为自己的内容 |
 | 页面标题 / 描述 / 关键词 / ICP 备案号 | `index.html` | `<head>` 与 `<footer>` 中修改 |
@@ -206,6 +216,59 @@ var weatherConfig = {
 3. **电脑端浏览器 GPS 其实是 WiFi 定位库**,经常偏到隔壁市,所以用 `maxAutoDistanceKm` 做距离校验,跑偏就忽略并改走 IP 定位。
 4. **所有定位请求都必须带超时**,且整条链要有总时限 —— 否则接口挂住不返回时,页面会一直停在「正在定位...」。
 5. 定位类接口偶发失败是常态,所以任何一级都不能是单点,最后一定要能回退到兜底城市。
+
+### 电脑状态卡
+
+纯静态站点没有后端,读不到「本机正在用什么软件」,所以这条链路是**本机主动上报 + 云端中转**:
+
+```
+本机 PowerShell(每 30s)  ──POST──▶  Cloudflare Worker  ──▶  KV
+        ▲                                                      │
+        └────────── 取前台窗口 / 空闲时长                        │
+                                                               ▼
+                                          访客浏览器  ◀──GET──  读取
+```
+
+**部署四步**(详细说明见 [worker/README.md](worker/README.md)):
+
+```bash
+npm i -g wrangler
+wrangler login
+wrangler kv namespace create DEVICE_KV   # 把返回的 id 填进 worker/wrangler.toml
+cd worker && wrangler deploy
+wrangler secret put REPORT_TOKEN         # 自定义一个口令
+```
+
+然后把 Worker 上报地址填进 `tools/report-device.ps1` 顶部的 `$Endpoint`,口令写进 `tools/report-token.local`(该文件已在 `.gitignore` 中,不会进公开仓库;也可以改用环境变量 `MUYU_REPORT_TOKEN`)。先 `-Once` 试跑,确认无误后注册开机自启:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\report-device.ps1 -Once
+powershell -ExecutionPolicy Bypass -File tools\install-device-task.ps1
+```
+
+最后把 Worker 的读接口地址填进 `static/js/script.js` 的 `deviceStatusConfig.endpoint`:
+
+```js
+var deviceStatusConfig = {
+    endpoint: "https://muyu-device-status.你的子域.workers.dev/api/device/status",
+    refreshIntervalSeconds: 30,     // 前端轮询间隔
+    requestTimeoutMs: 8000,         // 单请求超时,超时按离线处理
+    staleAfterSeconds: 180,         // 超过这么久没上报即判定离线
+    iconMap: { ... },               // 进程名 → Font Awesome 图标
+    keywordIcons: [ ... ]           // 没命中时的关键词兜底
+};
+```
+
+> 注册计划任务时 `New-ScheduledTaskTrigger -AtLogOn` **必须带 `-User`**。不带 `-User` 的触发器属于「任意用户登录」,注册需要管理员权限,普通账户会直接报 `Access is denied (0x80070005)`;带上当前用户后普通账户即可注册。
+
+**设计要点**:
+
+1. **`endpoint` 留空 = 功能未启用**,JS 会直接把整张卡片 `hidden`,页面上不会留一块空白,所以没部署也可以安心提交。
+2. **上报与展示的职责分离**:应用中文名与吐槽文案在**本机脚本**里映射(那张 100+ 条的 `$AppMap`),Worker 只做字段白名单与长度截断,前端不做业务映射 —— 想加新应用只改本机脚本,不用重新部署前端。
+3. **状态分级**:`online`(在用)/ `away`(空闲 >5 分钟)/ `locked`(无前台窗口,已锁屏)/ `offline`(上报断流)。前三种由本机判断,`offline` 由 Worker 按 180 秒无上报判定,前端拿到 `online:false` 就渲染离线态。
+4. **失败不清空**:请求失败时只把状态角标改成「离线」并保留上一次的内容,避免网络抖动让卡片闪成空白。
+5. **后台标签页不轮询**:`document.visibilityState !== "visible"` 时跳过,切回前台若距上次成功超过 20 秒立刻补一次 —— 后台定时器会被浏览器降频,不能只依赖 `setInterval`。
+6. **读接口公开、写接口带口令**:与常见做法一致 —— 访客要能看到状态,所以 `GET` 放开跨域;`POST` 必须带 `X-Report-Token`,Worker 侧用恒定时间比较避免逐位爆破。
 
 ## 🧰 技术栈
 

@@ -1,3 +1,10 @@
 # AI 助手的工作记忆目录（含内部笔记，不随仓库公开）
 .workbuddy/
 .workbuddy-ai/
+
+# 本机上报口令：不能进公开仓库
+tools/report-token.local
+
+# wrangler 本地缓存（含账号 id，不进仓库）
+worker/.wrangler/
+.wrangler/

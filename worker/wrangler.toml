@@ -1,0 +1,16 @@
+# Cloudflare Worker 配置
+# 部署：cd worker && wrangler deploy
+#
+# 首次需要先建 KV 命名空间，把返回的 id 填到下面：
+#   wrangler kv namespace create DEVICE_KV
+#
+# 再设置上报口令（不要写进这个文件，它会被提交到仓库）：
+#   wrangler secret put REPORT_TOKEN
+
+name = "muyu-device-status"
+main = "device-status-worker.js"
+compatibility_date = "2026-10-01"
+
+[[kv_namespaces]]
+binding = "DEVICE_KV"
+id = "73eba6c9512d4b5e9c793a02bdca3b26"

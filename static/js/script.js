@@ -63,6 +63,134 @@ var weatherConfig = {
     qweatherApiHost: "https://n27p3u5uhf.re.qweatherapi.com"
 };
 
+// 电脑状态卡片：纯静态站点读不到本机信息，所以由本机脚本定时上报到
+// Cloudflare Worker（见仓库 worker/ 与 tools/），页面只负责读。
+//
+// endpoint 留空 = 未部署，整张卡片自动隐藏，不会在页面上留一块空白。
+var deviceStatusConfig = {
+    // 部署 Worker 后填这里，形如：
+    // https://muyu-device-status.你的子域.workers.dev/api/device/status
+    endpoint: "https://muyu-device-status.2756390658.workers.dev/api/device/status",
+
+    // 前端轮询间隔（秒）。本机 30s 上报一次，这里同步即可。
+    refreshIntervalSeconds: 30,
+    // 单个请求超时（毫秒），超时按「离线」处理，不会一直转圈。
+    requestTimeoutMs: 8000,
+    // 超过这个秒数没收到新上报就判定本机离线（本机侧容错 3 分钟）。
+    staleAfterSeconds: 180,
+    // 页面切回前台时，距上次成功刷新超过该秒数就立刻补一次。
+    visibilityRefreshAfterSeconds: 20,
+
+    // 进程名（小写）→ Font Awesome 图标
+    iconMap: {
+        code: "fa-code",
+        cursor: "fa-code",
+        devenv: "fa-code",
+        idea64: "fa-code",
+        pycharm64: "fa-code",
+        webstorm64: "fa-code",
+        goland64: "fa-code",
+        rider64: "fa-code",
+        sublime_text: "fa-code",
+        windowsterminal: "fa-terminal",
+        wt: "fa-terminal",
+        powershell: "fa-terminal",
+        pwsh: "fa-terminal",
+        cmd: "fa-terminal",
+        conhost: "fa-terminal",
+        "git-bash": "fa-terminal",
+        mintty: "fa-terminal",
+        chrome: "fa-globe",
+        msedge: "fa-globe",
+        firefox: "fa-globe",
+        brave: "fa-globe",
+        opera: "fa-globe",
+        wechat: "fa-comment-dots",
+        weixin: "fa-comment-dots",
+        qq: "fa-comment-dots",
+        tim: "fa-comment-dots",
+        dingtalk: "fa-comment-dots",
+        wework: "fa-comment-dots",
+        telegram: "fa-paper-plane",
+        discord: "fa-comment-dots",
+        feishu: "fa-comment-dots",
+        lark: "fa-comment-dots",
+        cloudmusic: "fa-music",
+        qqmusic: "fa-music",
+        spotify: "fa-music",
+        potplayer: "fa-film",
+        potplayermini64: "fa-film",
+        vlc: "fa-film",
+        mpv: "fa-film",
+        bilibili: "fa-tv",
+        steam: "fa-gamepad",
+        steamwebhelper: "fa-gamepad",
+        epicgameslauncher: "fa-gamepad",
+        genshinimpact: "fa-gamepad",
+        yuanshen: "fa-gamepad",
+        starrail: "fa-gamepad",
+        dota2: "fa-gamepad",
+        cs2: "fa-gamepad",
+        tslgame: "fa-gamepad",
+        winword: "fa-file-word",
+        excel: "fa-file-excel",
+        powerpnt: "fa-file-powerpoint",
+        onenote: "fa-note-sticky",
+        wps: "fa-file-lines",
+        et: "fa-file-excel",
+        wpp: "fa-file-powerpoint",
+        acrobat: "fa-file-pdf",
+        acrord32: "fa-file-pdf",
+        sumatrapdf: "fa-file-pdf",
+        obsidian: "fa-book",
+        typora: "fa-file-lines",
+        zotero: "fa-book",
+        photoshop: "fa-image",
+        illustrator: "fa-pen-nib",
+        figma: "fa-pen-ruler",
+        blender: "fa-cube",
+        premiere: "fa-film",
+        afterfx: "fa-wand-magic-sparkles",
+        obs64: "fa-video",
+        snippingtool: "fa-crop-simple",
+        explorer: "fa-folder-open",
+        taskmgr: "fa-gauge-high",
+        filezilla: "fa-server",
+        winscp: "fa-server",
+        putty: "fa-server",
+        mobaxterm: "fa-server",
+        xshell: "fa-server",
+        idman: "fa-download",
+        thunder: "fa-download",
+        qbittorrent: "fa-download",
+        motrix: "fa-download",
+        clash: "fa-shield-halved",
+        "clash-verge": "fa-shield-halved",
+        v2rayn: "fa-shield-halved",
+        openlist: "fa-cloud",
+        alist: "fa-cloud",
+        everything: "fa-magnifying-glass",
+        "7zfm": "fa-file-zipper",
+        winrar: "fa-file-zipper",
+        bandizip: "fa-file-zipper",
+        notepad: "fa-file-lines",
+        "notepad++": "fa-file-lines"
+    },
+
+    // 进程名没命中时，按「应用名」里的关键词兜底选图标
+    keywordIcons: [
+        { match: "音乐", icon: "fa-music" },
+        { match: "浏览器", icon: "fa-globe" },
+        { match: "终端", icon: "fa-terminal" },
+        { match: "代码", icon: "fa-code" },
+        { match: "编辑器", icon: "fa-code" },
+        { match: "设计", icon: "fa-pen-ruler" },
+        { match: "表格", icon: "fa-file-excel" },
+        { match: "文档", icon: "fa-file-lines" },
+        { match: "视频", icon: "fa-film" }
+    ]
+};
+
 function timePeriodText(hour) {
     if (hour < 5) {
         return "凌晨";
@@ -1793,4 +1921,299 @@ document.addEventListener('visibilitychange', function () {
     }
   }
 }
+// ===================== 电脑状态卡片 =====================
+// 数据链路：本机 tools/report-device.ps1 --POST--> Cloudflare Worker --KV--> 这里 GET
+// 纯静态站点没有后端，所以「本机上报 + 中转读取」是唯一可行的做法。
+//
+// 没填 deviceStatusConfig.endpoint 时整张卡片隐藏，页面上不会留一块死区域。
+var deviceStatusTimer = null;
+var deviceStatusInFlight = false;
+var deviceStatusLastSuccessAt = 0;
+var deviceStatusElements = null;
+
+// 缓存 DOM 查询；卡片是静态写在 index.html 里的，查一次就够
+function deviceStatusEls() {
+    if (!deviceStatusElements) {
+        deviceStatusElements = {
+            card: document.getElementById("device-status-card"),
+            badge: document.getElementById("device-badge"),
+            badgeText: document.getElementById("device-badge-text"),
+            icon: document.getElementById("device-app-icon"),
+            appName: document.getElementById("device-app-name"),
+            appQuip: document.getElementById("device-app-quip"),
+            title: document.getElementById("device-title"),
+            updated: document.getElementById("device-updated"),
+            refresh: document.getElementById("device-refresh")
+        };
+    }
+    return deviceStatusElements;
+}
+
+// 进程名优先命中映射表，其次按应用名里的关键词兜底，最后给个通用显示器图标
+function deviceIconFor(processName, appName) {
+    var map = deviceStatusConfig.iconMap || {};
+    var key = String(processName || "").toLowerCase();
+
+    if (key && Object.prototype.hasOwnProperty.call(map, key)) {
+        return map[key];
+    }
+
+    var name = String(appName || "");
+    var rules = deviceStatusConfig.keywordIcons || [];
+
+    for (var i = 0; i < rules.length; i++) {
+        if (name.indexOf(rules[i].match) !== -1) {
+            return rules[i].icon;
+        }
+    }
+
+    return "fa-desktop";
+}
+
+function setDeviceIcon(iconName) {
+    var els = deviceStatusEls();
+
+    if (!els.icon) {
+        return;
+    }
+
+    // 只替换 fa-* 类，别把 device-app-icon 一起冲掉（否则尺寸和配色全丢）
+    var kept = [];
+
+    for (var i = 0; i < els.icon.classList.length; i++) {
+        var name = els.icon.classList[i];
+
+        if (name.indexOf("fa-") !== 0) {
+            kept.push(name);
+        }
+    }
+
+    kept.push("fa-solid", iconName);
+    els.icon.className = kept.join(" ");
+}
+
+function setDeviceBadge(text, tone) {
+    var els = deviceStatusEls();
+
+    if (!els.badge) {
+        return;
+    }
+
+    els.badge.className = "device-badge is-" + tone;
+
+    if (els.badgeText) {
+        els.badgeText.textContent = text;
+    }
+}
+
+// 上报时间转成「刚刚 / N 分钟前」，超过一小时就只显示时刻
+function formatDeviceAge(reportedAt) {
+    if (!reportedAt) {
+        return "--";
+    }
+
+    var ageSeconds = Math.max(0, Math.round((Date.now() - reportedAt) / 1000));
+
+    if (ageSeconds < 60) {
+        return "刚刚更新";
+    }
+    if (ageSeconds < 3600) {
+        return Math.round(ageSeconds / 60) + " 分钟前更新";
+    }
+
+    var date = new Date(reportedAt);
+    var pad = function (value) {
+        return String(value).padStart(2, "0");
+    };
+
+    return pad(date.getHours()) + ":" + pad(date.getMinutes()) + " 更新";
+}
+
+// 各状态下的兜底文案：脚本已经带了 quip，但旧记录或异常数据可能没有
+function defaultDeviceQuip(state, idleSeconds) {
+    if (state === "locked") {
+        return "电脑锁屏了，人不在跟前。";
+    }
+    if (state === "away") {
+        var minutes = Math.floor((idleSeconds || 0) / 60);
+        return minutes > 0 ? "已经 " + minutes + " 分钟没有操作了。" : "暂时离开了一下。";
+    }
+    if (state === "online") {
+        return "正在使用中。";
+    }
+    return "状态未知。";
+}
+
+function renderDeviceOffline(reason) {
+    var els = deviceStatusEls();
+
+    if (!els.card) {
+        return;
+    }
+
+    els.card.dataset.state = "offline";
+    setDeviceBadge("离线", "off");
+    setDeviceIcon("fa-power-off");
+
+    if (els.appName) {
+        els.appName.textContent = "电脑已离线";
+    }
+    if (els.appQuip) {
+        els.appQuip.textContent = reason || "本机上报已中断，可能关机或断网。";
+    }
+    if (els.title) {
+        els.title.hidden = true;
+        els.title.textContent = "";
+    }
+    if (els.updated) {
+        els.updated.textContent = deviceStatusLastSuccessAt
+            ? formatDeviceAge(deviceStatusLastSuccessAt)
+            : "暂无数据";
+    }
+}
+
+function renderDeviceStatus(payload) {
+    var els = deviceStatusEls();
+
+    if (!els.card) {
+        return;
+    }
+
+    // stale = 上报断流；record 为空 = 从未上报过
+    if (!payload || payload.success === false || !payload.online || !payload.record) {
+        renderDeviceOffline(payload && payload.reason === "no_report_yet"
+            ? "本机还没有上报过状态。"
+            : "");
+        return;
+    }
+
+    var record = payload.record;
+    var state = String(record.state || "unknown");
+    var appName = String(record.app || record.process || "").trim() || "未知应用";
+
+    els.card.dataset.state = state;
+
+    if (state === "online") {
+        setDeviceBadge("在线", "ok");
+    } else if (state === "away") {
+        setDeviceBadge("离开", "warn");
+    } else if (state === "locked") {
+        setDeviceBadge("锁屏", "idle");
+    } else {
+        setDeviceBadge("未知", "unknown");
+    }
+
+    setDeviceIcon(deviceIconFor(record.process, appName));
+
+    if (els.appName) {
+        els.appName.textContent = appName;
+    }
+    if (els.appQuip) {
+        els.appQuip.textContent = String(record.quip || "").trim() ||
+            defaultDeviceQuip(state, record.idleSeconds);
+    }
+
+    // 窗口标题是锦上添花，没有就整行收起
+    if (els.title) {
+        var title = String(record.title || "").trim();
+
+        els.title.textContent = title;
+        els.title.hidden = !title;
+    }
+
+    if (els.updated) {
+        els.updated.textContent = formatDeviceAge(record.reportedAt);
+    }
+}
+
+function fetchDeviceStatus(manual) {
+    var els = deviceStatusEls();
+    var endpoint = String(deviceStatusConfig.endpoint || "").trim();
+
+    if (!els.card) {
+        return;
+    }
+
+    // 没配 endpoint 就当功能未启用，直接藏掉卡片
+    if (!endpoint) {
+        els.card.hidden = true;
+        return;
+    }
+
+    els.card.hidden = false;
+
+    if (deviceStatusInFlight) {
+        return;
+    }
+
+    deviceStatusInFlight = true;
+
+    if (manual && els.refresh) {
+        els.refresh.classList.add("is-spinning");
+    }
+
+    // 带上时间戳绕开任何中间缓存；Worker 侧本身也是 no-store
+    var url = endpoint + (endpoint.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now();
+
+    fetchWithTimeout(url, deviceStatusConfig.requestTimeoutMs).then(function (response) {
+        return response.json();
+    }).then(function (payload) {
+        deviceStatusLastSuccessAt = Date.now();
+        renderDeviceStatus(payload);
+    }).catch(function (error) {
+        // 拿不到数据时不清空旧内容，只把状态改成离线，避免卡片闪空
+        console.warn("电脑状态获取失败：" + error.message);
+        renderDeviceOffline("暂时读不到状态，稍后自动重试。");
+    }).then(function () {
+        deviceStatusInFlight = false;
+
+        if (els.refresh) {
+            els.refresh.classList.remove("is-spinning");
+        }
+    });
+}
+
+function initDeviceStatus() {
+    var els = deviceStatusEls();
+
+    if (!els.card) {
+        return;
+    }
+
+    if (!String(deviceStatusConfig.endpoint || "").trim()) {
+        els.card.hidden = true;
+        return;
+    }
+
+    if (els.refresh) {
+        els.refresh.addEventListener("click", function () {
+            fetchDeviceStatus(true);
+        });
+    }
+
+    fetchDeviceStatus(false);
+
+    // 轮询间隔比本机上报间隔略长，避免刚好卡在上报边界上读到旧数据
+    deviceStatusTimer = window.setInterval(function () {
+        if (document.visibilityState === "visible") {
+            fetchDeviceStatus(false);
+        }
+    }, Math.max(10, deviceStatusConfig.refreshIntervalSeconds) * 1000);
+
+    // 切回前台时补一次：后台标签页的定时器会被浏览器降频，回来先对一下时间
+    document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState !== "visible") {
+            return;
+        }
+
+        var sinceSuccess = (Date.now() - deviceStatusLastSuccessAt) / 1000;
+
+        if (sinceSuccess >= deviceStatusConfig.visibilityRefreshAfterSeconds) {
+            fetchDeviceStatus(false);
+        }
+    });
+}
+
+initDeviceStatus();
+
 clickEffect();

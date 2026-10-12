@@ -2427,6 +2427,8 @@ footer {
     .gradientText,
     .footer-runtime-dot,
     .time-period-dot,
+    .device-badge-dot,
+    .device-refresh.is-spinning i,
     .mw-cover-img,
     #line li:first-child .focus:first-child {
         animation: none;
@@ -2439,6 +2441,217 @@ footer {
     }
 }
 
+
+/* --------------------------- 电脑状态卡片 --------------------------- */
+/* 数据来自本机上报脚本 + Cloudflare Worker，见 worker/README.md。
+   没配 endpoint 时 JS 会把整张卡片隐藏，所以这里的样式只在启用后可见。 */
+.device-status-card[hidden] {
+    display: none;
+}
+
+.device-status-card {
+    --device-ok: #2fa96b;
+    --device-warn: #d69434;
+    --device-idle: #6f8299;
+    --device-off: #cc5a52;
+}
+
+html[data-theme="Dark"] .device-status-card {
+    --device-ok: #4fd68f;
+    --device-warn: #f0c05a;
+    --device-idle: #93a3b8;
+    --device-off: #ff7b73;
+}
+
+.device-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 26px;
+}
+
+.device-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: var(--r-pill);
+    color: var(--device-tone, var(--device-idle));
+    background: color-mix(in srgb, var(--device-tone, var(--device-idle)) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--device-tone, var(--device-idle)) 24%, transparent);
+    font-size: 11px;
+    letter-spacing: 1px;
+    transition: color var(--dur-fast) ease, background-color var(--dur-fast) ease,
+        border-color var(--dur-fast) ease;
+}
+
+.device-badge.is-ok {
+    --device-tone: var(--device-ok);
+}
+
+.device-badge.is-warn {
+    --device-tone: var(--device-warn);
+}
+
+.device-badge.is-idle,
+.device-badge.is-unknown {
+    --device-tone: var(--device-idle);
+}
+
+.device-badge.is-off {
+    --device-tone: var(--device-off);
+}
+
+.device-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: timePeriodPulse 2s ease-in-out infinite;
+}
+
+.device-body {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-top: var(--sp-3);
+}
+
+.device-app-icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--r-sm);
+    background: var(--left_tag_item);
+    border: 1px solid var(--card-border-soft);
+    color: var(--purple_text_color);
+    font-size: 18px;
+    transition: color var(--dur) var(--ease-out);
+}
+
+.device-app-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.device-app-name {
+    overflow: hidden;
+    color: var(--item_left_title_color);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.device-app-quip {
+    margin-top: 2px;
+    overflow: hidden;
+    color: var(--item_left_text_color);
+    font-size: 12px;
+    line-height: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.device-title {
+    margin-top: var(--sp-2);
+    padding: 6px 10px;
+    overflow: hidden;
+    border-radius: var(--r-xs);
+    background: var(--left_tag_item);
+    color: var(--item_left_text_color);
+    font-size: 11.5px;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.device-title[hidden] {
+    display: none;
+}
+
+.device-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--sp-3);
+    padding-top: var(--sp-2);
+    border-top: 1px solid var(--hairline);
+}
+
+.device-updated {
+    color: var(--item_left_text_color);
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    opacity: 0.85;
+}
+
+.device-refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--item_left_text_color);
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.75;
+    transition: color var(--dur-fast) ease, background-color var(--dur-fast) ease,
+        opacity var(--dur-fast) ease;
+}
+
+.device-refresh:hover {
+    color: var(--purple_text_color);
+    background: var(--item_hover_color);
+    opacity: 1;
+}
+
+.device-refresh.is-spinning i {
+    animation: deviceSpin 0.8s linear infinite;
+}
+
+@keyframes deviceSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 状态色渗透到图标，一眼能看出在线 / 离开 / 锁屏 / 离线 */
+.device-status-card[data-state="online"] .device-app-icon {
+    color: var(--device-ok);
+}
+
+.device-status-card[data-state="away"] .device-app-icon {
+    color: var(--device-warn);
+}
+
+.device-status-card[data-state="locked"] .device-app-icon {
+    color: var(--device-idle);
+}
+
+.device-status-card[data-state="offline"] .device-app-icon {
+    color: var(--device-off);
+}
+
+.device-status-card[data-state="offline"] .device-app-name {
+    color: var(--item_left_text_color);
+}
+
+@media (max-width: 480px) {
+    .device-app-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+    }
+}
 
 /* 鼠标样式 */
 #cursor {
