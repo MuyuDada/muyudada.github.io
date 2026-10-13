@@ -394,8 +394,10 @@ function Write-Snapshot {
 
     if (-not $SnapshotEnabled) { return $false }
 
-    # GitHub raw 走 Fastly CDN，缓存 300 秒；写得比这更勤页面也不会更早看到，
-    # 纯属浪费 API 配额（未认证 60 次/小时，认证 5000 次/小时）。
+    # GitHub raw 响应带 Cache-Control: max-age=300，而且实测写完之后
+    # GitHub 那边要几十秒到一百多秒才对外可见（连写 5 轮实测 1/58/103/54/46 秒）。
+    # 写得比这更勤页面也不会更早看到，纯属浪费 API 配额
+    # （未认证 60 次/小时，认证 5000 次/小时）。
     $elapsed = ([datetime]::UtcNow - $script:LastSnapshotAt).TotalSeconds
     if ($elapsed -lt $SnapshotIntervalSeconds) { return $false }
 

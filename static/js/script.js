@@ -2254,10 +2254,13 @@ function fetchDeviceFallback() {
         return Promise.reject(new Error("未配置备用通道"));
     }
 
-    // Gist raw 走 Fastly CDN，默认 max-age=300，直接读有 5 分钟可能拿到旧副本。
-    // 实测给 URL 挂一个随机查询串就能让它回 MISS（缓存键含 query string），
-    // 所以这里加上 —— 代价是每次都得回源，对这种低流量站点完全可接受。
-    // 即便如此，返回后仍会按 reportedAt 判一次时效（见 normalizeDeviceSnapshot）。
+    // Gist raw 响应带 Cache-Control: max-age=300，浏览器自己就会把副本缓存 5 分钟。
+    // 挂一个每次都不同的查询串能绕开浏览器这一层缓存（浏览器按完整 URL 做键）。
+    //
+    // 注意别指望它能绕开 GitHub 那边的缓存：实测连写 5 轮、每轮都用随机查询串读，
+    // 看到新内容的延迟分别是 1 / 58 / 103 / 54 / 46 秒 —— 查询串对 Fastly 与
+    // GitHub 自身的传播延迟没有作用。所以真正的兜底是返回后按 reportedAt 在本地
+    // 判一次时效（见 normalizeDeviceSnapshot），而不是这个参数。
     var url = fallback + (fallback.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now();
 
     return fetchWithTimeout(url, deviceStatusConfig.requestTimeoutMs).then(function (response) {
