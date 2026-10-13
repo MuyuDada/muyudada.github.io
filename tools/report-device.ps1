@@ -13,7 +13,7 @@
 
 param(
     [switch]$Once,
-    [int]$IntervalSeconds = 30
+    [int]$IntervalSeconds = 60
 )
 
 # --------------------------- 需要配置的地址与口令 ---------------------------
@@ -187,6 +187,13 @@ $AppMap = @{
     "cs2"               = @{ Name = "CS2"; Quip = "在打枪。" }
     "league of legends" = @{ Name = "英雄联盟"; Quip = "在打排位。" }
     "tslgame"           = @{ Name = "绝地求生"; Quip = "在吃鸡。" }
+
+    # ---- 常玩的网游（键必须全小写！Get-AppDisplay 会用 ToLowerInvariant() 查表）----
+    "deltaforceclient-win64-shipping" = @{ Name = "三角洲行动"; Quip = "在三角洲里摸金~~" }
+    "delta_force_launcher"            = @{ Name = "三角洲行动"; Quip = "正在启动三角洲行动……" }
+    "nzmclient"                       = @{ Name = "逆战：未来"; Quip = "正在刷怪中~~" }
+    "nzm_launcher"                    = @{ Name = "逆战：未来"; Quip = "正在启动逆战：未来……" }
+    "wegame"                          = @{ Name = "WeGame"; Quip = "在逛游戏商城。" }
 
     # ---- 办公 / 学习 ----
     "winword"           = @{ Name = "Word"; Quip = "在写文档。" }
