@@ -65,8 +65,21 @@ wrangler secret put REPORT_TOKEN
 部署：
 
 ```bash
+# 必须在这个 worker/ 目录里执行！
 wrangler deploy
 ```
+
+> ⚠️ **一定要在 `worker/` 目录里跑 `wrangler deploy`，不要在仓库根目录跑。**
+>
+> 根目录没有 wrangler 配置，wrangler 会**自动生成**一个
+> （`assets.directory = "."`）并部署一个「纯静态资源」Worker，把**整个工作目录**
+> 当成网站传上去。`.gitignore` 只对 git 生效，**对 wrangler 完全无效**，所以
+> `tools/report-token.local`、`tools/gist-id.local`、`.git/config`、`.wrangler/`
+> 这些被 git 忽略的本地文件会一起挂到公网 URL 上。
+>
+> 2026-10-14 就这么翻过一次车（暴露约 2.5 分钟，事后删 Worker + 轮换口令）。
+> 仓库根目录现在放了一个 `.assetsignore` 兜底，但**根本的防线是别在根目录部署**。
+> 自检：部署后 `curl <worker地址>/tools/report-token.local` 应当返回 404。
 
 输出里会有一行 `https://muyu-device-status.<你的子域>.workers.dev`。
 
