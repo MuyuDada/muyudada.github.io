@@ -3,14 +3,14 @@
 主页是纯静态的，浏览器看不到你电脑上开着什么程序。所以链路是：
 
 ```
-本机 PowerShell 脚本（每 30 秒）
+本机 PowerShell 脚本（变化驱动 + 心跳）
         │  POST /api/device/report   （带 X-Report-Token）
         ▼
 Cloudflare Worker  ──写入──▶  Cloudflare KV
         ▲
         │  GET /api/device/status    （公开只读，带 CORS）
         │
-主页 static/js/script.js（每 30 秒轮询）
+主页 static/js/script.js（每 60 秒轮询）
 ```
 
 KV 里只存一条记录（key = `device:latest`），永远覆盖，不累积历史。
@@ -111,7 +111,7 @@ powershell -ExecutionPolicy Bypass -File tools\report-device.ps1 -Once
 powershell -ExecutionPolicy Bypass -File tools\install-device-task.ps1
 ```
 
-它会注册一个登录时启动的计划任务，后台常驻、每 30 秒上报一次，无窗口闪烁。
+它会注册一个登录时启动的计划任务，后台常驻、无窗口闪烁。上报节奏见下方「省额度设计」。
 
 卸载：
 
@@ -179,7 +179,9 @@ var deviceStatusConfig = {
 }
 ```
 
-超过 180 秒没有上报，`stale` 变为 `true`、`online` 变为 `false`，页面会显示「离线」。
+超过阈值没有上报，`stale` 变为 `true`、`online` 变为 `false`，页面会显示「离线」。
+阈值随上报状态动态调整（在线 300 秒、离开/锁屏 720 秒），并随响应里的
+`staleAfterSeconds` 字段回传，便于前端与调试时确认。
 
 ---
 
@@ -187,4 +189,36 @@ var deviceStatusConfig = {
 
 - 写接口靠 `REPORT_TOKEN` 保护，token 存在 Worker Secret 里，不进仓库。
 - **读接口是公开的**——任何知道地址的人都能看到你当前开着什么程序。这跟 tonks.top 的做法一致（`/api/query` 也是公开的）。如果不想公开，把 `GET /api/device/status` 也加上 token 校验，但那样主页就得把 token 写进前端 JS，等于没保护；真要私密只能加一层登录。
-- KV 免费额度：每天 10 万次读、1000 次写。按 30 秒上报 + 30 秒轮询算，一天约 2880 写 / 2880 读，绰绰有余。
+- KV 免费额度：每天 10 万次**读**、1000 次**写**。写是瓶颈，读不是。
+  固定 30 秒上报 = 2880 次写/天，会直接爆额度。所以上报脚本用的是
+  **变化驱动 + 心跳**（见下），实测挂机约 288 写/天、正常使用约 400~600 写/天。
+
+---
+
+## 省额度设计
+
+`tools/report-device.ps1` 不按固定间隔上报：
+
+1. 本机每 **15 秒**轮询一次前台窗口（纯本地 Win32 调用，不产生任何网络请求）；
+2. 只有「身份」变化（`state` / `app` / `process` 任一改变）才**立刻**上报；
+3. 身份没变时只发心跳保活：**在线 5 分钟**一次，**离开/锁屏 10 分钟**一次。
+
+窗口**标题**单独变化默认不触发上报 —— 浏览器翻页时标题一直在变，会疯狂消耗额度；
+标题会在下一次心跳时顺带刷新。确实需要跟着标题走，加 `-TitleTriggersUpdate`，
+代价是额度消耗显著上升。
+
+可调参数（都有默认值，一般不用动）：
+
+```powershell
+-PollSeconds 15            # 本机轮询间隔，纯本地调用
+-HeartbeatSeconds 300      # 在线时的心跳间隔
+-IdleHeartbeatSeconds 600  # 离开/锁屏时的心跳间隔
+-TitleTriggersUpdate       # 标题变化也上报（费额度）
+-IntervalSeconds 0         # 显式指定则退化成旧的固定间隔模式
+```
+
+⚠️ **心跳间隔与 Worker 的离线阈值必须匹配。** Worker 的阈值随状态动态调整
+（在线 300s、空闲 720s）。如果把 `-HeartbeatSeconds` 调得比 300 还大，
+正常的心跳间隙就会被误判成离线。改心跳时记得同步改
+`worker/device-status-worker.js` 里的 `STALE_AFTER_SECONDS`。
+
