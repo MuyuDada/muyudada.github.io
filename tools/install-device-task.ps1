@@ -77,6 +77,32 @@ Register-ScheduledTask `
     -Principal $principal `
     -Description "每 30 秒把本机前台应用状态上报到 Cloudflare Worker，供个人主页展示。" | Out-Null
 
+# -----------------------------------------------------------------------------
+# 备用自启：启动文件夹里放一个快捷方式
+#
+# 计划任务曾经在没有任何征兆的情况下凭空消失过一次（Tasks 目录下文件没了，
+# 上报静默中断两小时）。再加一条完全独立的自启路径作为兜底：
+# 就算计划任务再次被清掉，登录时照样能起来。
+#
+# 两条路径同时生效不会重复上报 —— report-device.ps1 里有命名互斥体，
+# 后来的实例会立刻退出。
+# -----------------------------------------------------------------------------
+$startupDir = [Environment]::GetFolderPath("Startup")
+$shortcutPath = Join-Path $startupDir "MuyuDeviceStatusReporter.lnk"
+try {
+    $shell = New-Object -ComObject WScript.Shell
+    $lnk = $shell.CreateShortcut($shortcutPath)
+    $lnk.TargetPath = "powershell.exe"
+    $lnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$ScriptPath`""
+    $lnk.WorkingDirectory = $PSScriptRoot
+    $lnk.WindowStyle = 7
+    $lnk.Description = "电脑状态上报（备用自启）"
+    $lnk.Save()
+    Write-Host "已创建备用自启快捷方式：$shortcutPath" -ForegroundColor Green
+} catch {
+    Write-Host "创建备用自启快捷方式失败（不影响计划任务）：$($_.Exception.Message)" -ForegroundColor Yellow
+}
+
 # 立即启动一次，不用等下次登录
 Start-ScheduledTask -TaskName $TaskName
 

@@ -83,6 +83,29 @@ $Token = ""
 
 $ErrorActionPreference = "Stop"
 
+# --------------------------- 本地运行日志 ---------------------------
+# 计划任务是无窗口运行的，出问题时光看控制台什么都留不下 —— 之前上报连续失败
+# 两个小时，事后完全查不到原因。所以这里把启动、上报失败、快照失败都记一份到本地。
+$LogDir  = Join-Path $env:LOCALAPPDATA "muyu-device-status"
+$LogFile = Join-Path $LogDir "reporter.log"
+
+function Write-ReporterLog {
+    param([string]$Message, [string]$Level = "INFO")
+    try {
+        if (-not (Test-Path -LiteralPath $LogDir)) {
+            New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+        }
+        # 超过 512KB 轮转一次，避免无限增长
+        if ((Test-Path -LiteralPath $LogFile) -and (Get-Item -LiteralPath $LogFile).Length -gt 512KB) {
+            Move-Item -LiteralPath $LogFile -Destination "$LogFile.1" -Force
+        }
+        $line = "{0} [{1}] {2}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $Level, $Message
+        Add-Content -LiteralPath $LogFile -Value $line -Encoding UTF8
+    } catch {
+        # 日志本身绝不能拖垮上报
+    }
+}
+
 # 从环境变量或本地文件补齐口令，避免把密钥提交到公开仓库
 if ([string]::IsNullOrWhiteSpace($Token)) {
     if (-not [string]::IsNullOrWhiteSpace($env:MUYU_REPORT_TOKEN)) {
@@ -423,6 +446,7 @@ function Write-Snapshot {
         return $true
     } catch {
         Write-Host ("[{0}] 快照写入失败（不影响主通道）: {1}" -f (Get-Date -Format "HH:mm:ss"), $_.Exception.Message) -ForegroundColor Yellow
+        Write-ReporterLog ("快照写入失败（不影响主通道）: {0}" -f $_.Exception.Message) "WARN"
         return $false
     }
 }
@@ -489,14 +513,30 @@ function Send-DeviceStatus {
 
         if ($response.success) {
             Write-Host ("[{0}] 已上报: {1} / {2}" -f (Get-Date -Format "HH:mm:ss"), $state, $appName) -ForegroundColor Green
+            Write-ReporterLog ("已上报: {0} / {1} ({2})" -f $state, $appName, $fg.ProcessName)
             Write-Snapshot -Payload $payload
             return $true
         } else {
             Write-Host ("[{0}] 上报被拒绝: {1}" -f (Get-Date -Format "HH:mm:ss"), ($response | ConvertTo-Json -Compress)) -ForegroundColor Yellow
+            Write-ReporterLog ("上报被拒绝: {0}" -f ($response | ConvertTo-Json -Compress)) "WARN"
             return $false
         }
     } catch {
-        Write-Host ("[{0}] 上报失败: {1}" -f (Get-Date -Format "HH:mm:ss"), $_.Exception.Message) -ForegroundColor Red
+        # 尽量把 Worker 返回的正文也取出来。Cloudflare 的 500 正文里才有真正的原因
+        # （例如额度耗尽时的 "reached the free usage limit"），否则本地只能看到一句
+        # 笼统的 "The remote server returned an error: (500)"，根本无从排查。
+        #
+        # 注意：PS 5.1 下正文在 $_.ErrorDetails.Message 里。不要去读
+        # $_.Exception.Response.GetResponseStream() —— PowerShell 已经把那条流读走
+        # 并缓存进 ErrorDetails 了，再读只会拿到空字符串。
+        $detail = $_.Exception.Message
+        $bodyText = $_.ErrorDetails.Message
+        if (-not [string]::IsNullOrWhiteSpace($bodyText)) {
+            $detail = "$detail | $bodyText"
+        }
+
+        Write-Host ("[{0}] 上报失败: {1}" -f (Get-Date -Format "HH:mm:ss"), $detail) -ForegroundColor Red
+        Write-ReporterLog ("上报失败: {0}" -f $detail) "ERROR"
         return $false
     }
 }
@@ -508,6 +548,28 @@ if ($Once) {
     [void](Send-DeviceStatus)
     exit 0
 }
+
+# ---- 单实例保护 ----
+# 常驻模式同时可能被计划任务和「启动」文件夹拉起（两条独立的自启路径互为备份，
+# 计划任务曾经莫名其妙消失过一次）。用命名互斥体保证只有一个实例真正在跑，
+# 否则两个进程各报各的，白白翻倍消耗额度。
+$script:Mutex = New-Object System.Threading.Mutex($false, "MuyuDeviceStatusReporter")
+$script:HasMutex = $false
+try {
+    $script:HasMutex = $script:Mutex.WaitOne(0, $false)
+} catch [System.Threading.AbandonedMutexException] {
+    # 上一个实例异常退出留下的互斥体，直接接管
+    $script:HasMutex = $true
+}
+
+if (-not $script:HasMutex) {
+    Write-Host "已有另一个上报实例在运行，本次退出。" -ForegroundColor Yellow
+    Write-ReporterLog "检测到已有实例在运行，本次退出。"
+    exit 0
+}
+
+Write-ReporterLog ("上报脚本启动：轮询 {0}s | 心跳 在线 {1}s / 空闲 {2}s | 备用通道 {3}" -f `
+    $PollSeconds, $HeartbeatSeconds, $IdleHeartbeatSeconds, $(if ($SnapshotEnabled) { "启用" } else { "关闭" }))
 
 # 兼容旧的固定间隔用法
 if ($IntervalSeconds -gt 0) {

@@ -6,14 +6,24 @@
 本机 PowerShell 脚本（变化驱动 + 心跳）
         │  POST /api/device/report   （带 X-Report-Token）
         ▼
-Cloudflare Worker  ──写入──▶  Cloudflare KV
+Cloudflare Worker  ──写入──▶  Cloudflare D1
         ▲
         │  GET /api/device/status    （公开只读，带 CORS）
         │
 主页 static/js/script.js（每 60 秒轮询）
 ```
 
-KV 里只存一条记录（key = `device:latest`），永远覆盖，不累积历史。
+D1 里只存一条记录（表 `device_status`，固定 `id = 1`），每次覆盖，不累积历史。
+
+> **为什么用 D1 而不是 KV**
+>
+> KV 免费额度每天只有 1000 次**写**，而 30 秒一次心跳就是 2880 次，必然撞上限。
+> 实测 2026-10-13 当天写了 1117 次后，Worker 开始返回
+> `your account has reached the free usage limit for this operation for today`
+> （HTTP 500），上报全线失败。
+>
+> D1 免费额度是每天 10 万行写入、500 万行读取，同样的用法只占百分之几。
+> KV 绑定保留着，但只作为**读兜底**（历史数据还在里面），不再写入。
 
 ---
 
@@ -28,18 +38,22 @@ npm install -g wrangler
 # 2. 登录（会打开浏览器授权）
 wrangler login
 
-# 3. 建 KV 命名空间，记下输出里的 id
+# 3. 建 D1 数据库，记下输出里的 database_id
 cd worker
-wrangler kv namespace create DEVICE_KV
+wrangler d1 create muyu-device-status
 ```
 
 把返回的 id 填进 `wrangler.toml`：
 
 ```toml
-[[kv_namespaces]]
-binding = "DEVICE_KV"
-id = "刚刚返回的 id"
+[[d1_databases]]
+binding = "DEVICE_DB"
+database_name = "muyu-device-status"
+database_id = "刚刚返回的 database_id"
 ```
+
+表结构**不用手动建**：Worker 首次写入时会 `CREATE TABLE IF NOT EXISTS` 自愈，
+忘了执行 `wrangler d1 execute` 也不会让上报静默失败。
 
 设置上报口令（自己随便编一串，别用弱口令）：
 
@@ -111,9 +125,11 @@ powershell -ExecutionPolicy Bypass -File tools\report-device.ps1 -Once
 powershell -ExecutionPolicy Bypass -File tools\install-device-task.ps1
 ```
 
-它会注册一个登录时启动的计划任务，后台常驻、无窗口闪烁。上报节奏见下方「省额度设计」。
+它会注册**两条独立的自启路径**：一个登录时启动的计划任务（后台常驻、无窗口闪烁），
+以及启动文件夹里的一个快捷方式。脚本内有单实例保护，两条同时生效也不会重复上报。
+上报节奏见下方「省额度设计」，排错见下方「自启与排错」。
 
-卸载：
+卸载（会同时清掉两条自启路径和正在运行的实例）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\uninstall-device-task.ps1
@@ -167,6 +183,7 @@ var deviceStatusConfig = {
   "stale": false,
   "ageSeconds": 12,
   "staleAfterSeconds": 600,
+  "source": "d1",
   "record": {
     "state": "online",
     "app": "VSCode 编辑器",
@@ -180,6 +197,9 @@ var deviceStatusConfig = {
   }
 }
 ```
+
+`source` 表示这次数据是从哪里读的：`d1`（正常）或 `kv`（D1 读失败时回落到 KV 里的
+历史数据）。D1 通了但表里没数据时，也会再去 KV 找一次，避免刚迁移完出现空窗。
 
 超过阈值没有上报，`stale` 变为 `true`、`online` 变为 `false`，页面会显示「离线」。
 
@@ -198,9 +218,10 @@ var deviceStatusConfig = {
 
 - 写接口靠 `REPORT_TOKEN` 保护，token 存在 Worker Secret 里，不进仓库。
 - **读接口是公开的**——任何知道地址的人都能看到你当前开着什么程序。这跟 tonks.top 的做法一致（`/api/query` 也是公开的）。如果不想公开，把 `GET /api/device/status` 也加上 token 校验，但那样主页就得把 token 写进前端 JS，等于没保护；真要私密只能加一层登录。
-- KV 免费额度：每天 10 万次**读**、1000 次**写**。写是瓶颈，读不是。
-  固定 30 秒上报 = 2880 次写/天，会直接爆额度。所以上报脚本用的是
-  **变化驱动 + 心跳**（见下），实测挂机约 288 写/天、正常使用约 400~600 写/天。
+- **存储额度**：D1 免费额度是每天 **10 万行写**、500 万行读。上报脚本用的是
+  **变化驱动 + 心跳**（见下），实测挂机约 288 写/天、正常使用约 400~600 写/天，
+  只占百分之几，不会撞上限。（早先用 KV 当主存储时每天只有 1000 次写，
+  30 秒固定上报必然爆额度，所以才迁到 D1。）
 
 ---
 
@@ -223,6 +244,7 @@ var deviceStatusConfig = {
 -HeartbeatSeconds 300      # 在线时的心跳间隔
 -IdleHeartbeatSeconds 600  # 离开/锁屏时的心跳间隔
 -TitleTriggersUpdate       # 标题变化也上报（费额度）
+-NoSnapshot                # 关掉 GitHub Gist 备用通道
 -IntervalSeconds 0         # 显式指定则退化成旧的固定间隔模式
 ```
 
@@ -230,4 +252,27 @@ var deviceStatusConfig = {
 （`heartbeatSeconds` 字段），Worker 按「心跳 × 2」自动推算离线阈值，
 所以调 `-HeartbeatSeconds` / `-IdleHeartbeatSeconds` 后**无需**改动
 `worker/device-status-worker.js`，两端不会失配。
+
+---
+
+## 自启与排错
+
+`install-device-task.ps1` 会注册**两条独立的自启路径**：
+
+1. 计划任务 `MuyuDeviceStatusReporter`（登录时触发）；
+2. 启动文件夹里的快捷方式 `MuyuDeviceStatusReporter.lnk`。
+
+之所以要两条：计划任务曾经在毫无征兆的情况下凭空消失过一次（`Tasks` 目录下的
+文件没了），上报静默中断两小时。两条路径不会重复上报 —— `report-device.ps1`
+里有命名互斥体做单实例保护，后来的实例会立刻退出。
+
+计划任务是无窗口运行的，出问题时控制台什么都没留下，所以脚本会把启动、上报失败、
+快照失败写进本地日志（超过 512KB 自动轮转）：
+
+```
+%LOCALAPPDATA%\muyu-device-status\reporter.log
+```
+
+排查顺序：先看这个日志 → 再看 `GET /api/device/status` 返回的 `ageSeconds`
+→ 最后才怀疑 Worker。
 

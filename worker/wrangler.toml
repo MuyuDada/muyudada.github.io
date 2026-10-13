@@ -1,11 +1,13 @@
 # Cloudflare Worker 配置
 # 部署：cd worker && wrangler deploy
 #
-# 首次需要先建 KV 命名空间，把返回的 id 填到下面：
-#   wrangler kv namespace create DEVICE_KV
+# 首次需要先建数据库，把返回的 id 填到下面的 [[d1_databases]]：
+#   wrangler d1 create muyu-device-status
 #
 # 再设置上报口令（不要写进这个文件，它会被提交到仓库）：
 #   wrangler secret put REPORT_TOKEN
+#
+# 表结构不用手动建：Worker 首次写入时会 CREATE TABLE IF NOT EXISTS 自愈。
 
 name = "muyu-device-status"
 main = "device-status-worker.js"
@@ -21,15 +23,33 @@ compatibility_date = "2026-10-01"
 # 这条路由让 muyuhome.cc.cd/api/device/* 交给本 Worker 处理；
 # 该域名不在路由匹配范围内的其他路径（即整站页面）不受影响，仍由原来的源站响应。
 #
-# 注意：routes 必须写在 [[kv_namespaces]] **之前**。TOML 里表头之后的键都属于
-# 该表，写在 KV 表下面会被解析成 kv_namespaces[0].routes，wrangler 会报
-# "Unexpected fields found in kv_namespaces[0] field: routes" 并静默忽略路由。
+# 注意：routes 必须写在 [[d1_databases]] / [[kv_namespaces]] **之前**。TOML 里
+# 表头之后的键都属于该表，写在下面会被解析成 xxx[0].routes，wrangler 会报
+# "Unexpected fields found in ... field: routes" 并静默忽略路由。
 # -----------------------------------------------------------------------------
 routes = [
   { pattern = "muyuhome.cc.cd/api/device/*", zone_name = "muyuhome.cc.cd" }
 ]
 
+# -----------------------------------------------------------------------------
+# 主存储：D1
+#
+# 为什么不用 KV 当主存储：KV 免费额度只有 1000 次**写**/天，而 30 秒一次心跳
+# 就是 2880 次/天，必然撞上限。2026-10-13 实测写了 1117 次后，Worker 开始返回
+# "your account has reached the free usage limit for this operation for today"，
+# 上报全线失败。D1 免费额度是 10 万行写/天，同样的用法只占几个百分点。
+# -----------------------------------------------------------------------------
+[[d1_databases]]
+binding = "DEVICE_DB"
+database_name = "muyu-device-status"
+database_id = "b0da460c-72af-4a94-aeb7-eee68cea7487"
+
+# -----------------------------------------------------------------------------
+# KV：仅作读兜底，不再写入
+#
+# 历史数据还留在 KV 里，D1 读失败或还没数据时会回落到这里，避免状态凭空消失。
+# 想彻底不用 KV，把这一段和 Worker 里的 readFromKv 一起删掉即可。
+# -----------------------------------------------------------------------------
 [[kv_namespaces]]
 binding = "DEVICE_KV"
 id = "73eba6c9512d4b5e9c793a02bdca3b26"
-

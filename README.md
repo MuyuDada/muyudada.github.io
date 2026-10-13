@@ -30,7 +30,7 @@
 - **一言 Hitokoto**:打字机效果逐字显示,每 20 秒自动刷新
 - **当地时间**:实时时钟 + 中文日期(含星期)与时段问候,每秒更新
 - **天气预报**:基于[和风天气 QWeather](https://www.qweather.com),**自动定位访问者所在地**(浏览器 GPS → IP 定位 → 兜底城市,逐级回退);可展开今日详情(风力、能见度、体感温度、湿度、气压、空气质量、云量、紫外线、降水量、日出日落、污染物浓度)
-- **电脑状态卡**:展示本机当前前台应用(中文名 + 吐槽文案 + 图标)、在线 / 离开 / 锁屏 / 离线状态与窗口标题。纯静态站点读不到本机信息,因此由本机 PowerShell 脚本以「变化驱动 + 心跳」的方式上报到 Cloudflare Worker(前台应用一换就立刻上报,不变时在线 5 分钟一次心跳),页面只读 KV。另有一条 GitHub Gist 备用通道,主通道读不到新鲜数据时自动兜底(见 [worker/README.md](worker/README.md))
+- **电脑状态卡**:展示本机当前前台应用(中文名 + 吐槽文案 + 图标)、在线 / 离开 / 锁屏 / 离线状态与窗口标题。纯静态站点读不到本机信息,因此由本机 PowerShell 脚本以「变化驱动 + 心跳」的方式上报到 Cloudflare Worker(前台应用一换就立刻上报,不变时在线 5 分钟一次心跳),页面只读 D1。另有一条 GitHub Gist 备用通道,主通道读不到新鲜数据时自动兜底(见 [worker/README.md](worker/README.md))
 - **音乐播放器**:自研播放器(原生 Audio API)+ Meting 接口加载网易云歌单,支持歌词、播放列表、音量、播放模式
 - **主题设置**:明暗主题切换(Cookie 持久化),背景/卡片的透明度、模糊度与卡片颜色可调(localStorage 持久化)
 - **GitHub 贡献贪吃蛇**:明暗两套 SVG 随主题切换
@@ -82,14 +82,14 @@
 │   ├── img/                  # 图片资源
 │   ├── svg/                  # 贪吃蛇 SVG、技能图等素材
 │   └── fonts/                # 自托管字体(霞鹜文楷 / Pacifico / Ubuntu)
-├── worker/                   # 电脑状态中转(Cloudflare Worker + KV)
+├── worker/                   # 电脑状态中转(Cloudflare Worker + D1)
 │   ├── device-status-worker.js  # 上报 / 读取 / 探活三个接口
-│   ├── wrangler.toml         # KV 绑定与 Worker 名称
+│   ├── wrangler.toml         # D1 / KV 绑定与 Worker 名称
 │   └── README.md             # 部署四步 + 接口文档
 ├── tools/                    # 本机上报脚本(Windows PowerShell)
 │   ├── report-device.ps1     # 取前台窗口 + 空闲时长,POST 上报,并同步一份快照到 Gist
-│   ├── install-device-task.ps1   # 注册开机自启的计划任务
-│   └── uninstall-device-task.ps1 # 卸载计划任务
+│   ├── install-device-task.ps1   # 注册开机自启(计划任务 + 启动文件夹快捷方式)
+│   └── uninstall-device-task.ps1 # 卸载自启与运行中的实例
 ├── Caddyfile                 # Caddy 服务器配置
 ├── Dockerfile                # 基于 caddy:alpine 的镜像
 └── docker-compose.yaml       # Docker Compose 编排
@@ -222,7 +222,7 @@ var weatherConfig = {
 纯静态站点没有后端,读不到「本机正在用什么软件」,所以这条链路是**本机主动上报 + 云端中转**:
 
 ```
-本机 PowerShell(变化驱动+心跳)  ──POST──▶  Cloudflare Worker  ──▶  KV
+本机 PowerShell(变化驱动+心跳)  ──POST──▶  Cloudflare Worker  ──▶  D1
         │           ▲                                            │
         │           └────────── 取前台窗口 / 空闲时长              ▼
         │                                     访客浏览器  ◀──GET── 读取
@@ -235,8 +235,8 @@ var weatherConfig = {
 ```bash
 npm i -g wrangler
 wrangler login
-wrangler kv namespace create DEVICE_KV   # 把返回的 id 填进 worker/wrangler.toml
-cd worker && wrangler deploy
+wrangler d1 create muyu-device-status    # 把返回的 id 填进 worker/wrangler.toml
+cd worker && wrangler deploy             # 表结构由 Worker 首次写入时自动建
 wrangler secret put REPORT_TOKEN         # 自定义一个口令
 ```
 
@@ -295,8 +295,10 @@ var deviceStatusConfig = {
 4. **失败不清空**:请求失败时只把状态角标改成「离线」并保留上一次的内容,避免网络抖动让卡片闪成空白。
 5. **后台标签页不轮询**:`document.visibilityState !== "visible"` 时跳过,切回前台若距上次成功超过 20 秒立刻补一次 —— 后台定时器会被浏览器降频,不能只依赖 `setInterval`。
 6. **读接口公开、写接口带口令**:与常见做法一致 —— 访客要能看到状态,所以 `GET` 放开跨域;`POST` 必须带 `X-Report-Token`,Worker 侧用恒定时间比较避免逐位爆破。
-7. **省 KV 额度靠「变化驱动」而非「拉长间隔」**:KV 免费额度瓶颈是**写**(每天 1000 次),固定 30 秒上报 = 2880 次/天,必然爆。所以本机每 15 秒读一次前台窗口(纯本地调用,零网络开销),只有应用身份变了才上报,不变时只发心跳(在线 5 分钟、空闲 10 分钟)。这样挂机约 288 写/天,而状态切换依然是**秒级实时**的 —— 拉长上报间隔会牺牲实时性,变化驱动不会。
+7. **存储用 D1 而不是 KV**:KV 免费额度瓶颈是**写**(每天 1000 次),固定 30 秒上报 = 2880 次/天,必然爆 —— 实测 2026-10-13 当天写了 1117 次后,Worker 直接开始返回 `your account has reached the free usage limit for this operation for today`(HTTP 500),上报全线失败。D1 免费额度是每天 10 万行写入,同样的用法只占百分之几。另外上报仍走「变化驱动」:本机每 15 秒读一次前台窗口(纯本地调用,零网络开销),只有应用身份变了才上报,不变时只发心跳(在线 5 分钟、空闲 10 分钟),挂机约 288 写/天,而状态切换依然是**秒级实时**的。
 8. **两条独立链路互为备份**:主通道走 Cloudflare,备用通道走 GitHub Gist。它们除了「都由本机写」之外没有任何共同依赖,同时挂掉的概率很低。降级判断有三层:主通道请求失败 → 走备用;主通道返回「离线」但备用有更新鲜的快照 → 以备用为准(避免 Cloudflare 那一段的问题被误报成「电脑关机」);两条都失败才显示离线,且**不清空**上次内容。
+9. **自启有两条独立路径**:计划任务 + 启动文件夹快捷方式。计划任务曾经在毫无征兆的情况下凭空消失过一次(Tasks 目录下的文件没了),上报静默中断两小时。脚本里有命名互斥体做单实例保护,所以两条路径同时生效也不会重复上报,后来者会立刻退出。
+10. **失败要留痕**:计划任务是无窗口运行的,出问题时控制台什么都没留下。上报脚本会把启动、上报失败、快照失败写进 `%LOCALAPPDATA%\muyu-device-status\reporter.log`(超过 512KB 自动轮转),事后能查。
 
 ## 🧰 技术栈
 
