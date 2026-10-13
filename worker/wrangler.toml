@@ -11,10 +11,6 @@ name = "muyu-device-status"
 main = "device-status-worker.js"
 compatibility_date = "2026-10-01"
 
-[[kv_namespaces]]
-binding = "DEVICE_KV"
-id = "73eba6c9512d4b5e9c793a02bdca3b26"
-
 # -----------------------------------------------------------------------------
 # 自定义域名路由（强烈建议保留）
 #
@@ -24,7 +20,16 @@ id = "73eba6c9512d4b5e9c793a02bdca3b26"
 #
 # 这条路由让 muyuhome.cc.cd/api/device/* 交给本 Worker 处理；
 # 该域名不在路由匹配范围内的其他路径（即整站页面）不受影响，仍由原来的源站响应。
+#
+# 注意：routes 必须写在 [[kv_namespaces]] **之前**。TOML 里表头之后的键都属于
+# 该表，写在 KV 表下面会被解析成 kv_namespaces[0].routes，wrangler 会报
+# "Unexpected fields found in kv_namespaces[0] field: routes" 并静默忽略路由。
 # -----------------------------------------------------------------------------
 routes = [
   { pattern = "muyuhome.cc.cd/api/device/*", zone_name = "muyuhome.cc.cd" }
 ]
+
+[[kv_namespaces]]
+binding = "DEVICE_KV"
+id = "73eba6c9512d4b5e9c793a02bdca3b26"
+

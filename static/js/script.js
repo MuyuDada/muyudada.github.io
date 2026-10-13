@@ -74,12 +74,15 @@ var deviceStatusConfig = {
     // Cloudflare 自定义域名（见 worker/wrangler.toml 里的 routes 配置）。
     endpoint: "https://muyuhome.cc.cd/api/device/status",
 
-    // 前端轮询间隔（秒）。本机 30s 上报一次，这里同步即可。
-    refreshIntervalSeconds: 30,
+    // 前端轮询间隔（秒）。
+    // 本机侧是「变化驱动 + 心跳」：前台应用一换就立刻上报，没换时在线 5 分钟
+    // 才发一次心跳。所以这里没必要跟着 30 秒跑，60 秒足够，还能省一半读取。
+    refreshIntervalSeconds: 60,
     // 单个请求超时（毫秒），超时按「离线」处理，不会一直转圈。
     requestTimeoutMs: 8000,
-    // 超过这个秒数没收到新上报就判定本机离线（本机侧容错 3 分钟）。
-    staleAfterSeconds: 180,
+    // 离线判定的权威值在 Worker 侧（它随上报状态动态调整：在线 300s、空闲 720s），
+    // 并以 staleAfterSeconds 字段回传。这里仅作兜底说明，不参与判断。
+    staleAfterSeconds: 300,
     // 页面切回前台时，距上次成功刷新超过该秒数就立刻补一次。
     visibilityRefreshAfterSeconds: 20,
 

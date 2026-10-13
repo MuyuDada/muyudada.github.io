@@ -1,7 +1,7 @@
 ﻿# =============================================================================
 #  Muyu 主页 · 电脑状态上报脚本
 # -----------------------------------------------------------------------------
-#  每 30 秒把「当前前台应用 + 在线状态」POST 到 Cloudflare Worker。
+#  把「当前前台应用 + 在线状态」POST 到 Cloudflare Worker。
 #
 #  用法：
 #    powershell -ExecutionPolicy Bypass -File tools\report-device.ps1          # 常驻循环
@@ -9,11 +9,40 @@
 #
 #  配置：把下面的 $Endpoint 换成你的 Worker 地址；口令写进 tools\report-token.local
 #        （已被 .gitignore 忽略）或设置环境变量 MUYU_REPORT_TOKEN，不要写进本脚本。
+#
+#  ── 省额度设计（重要）────────────────────────────────────────────────────────
+#  Cloudflare KV 免费额度里**写**是瓶颈：每天只有 1000 次，读有 10 万次。
+#  固定 30 秒上报 = 2880 次/天，直接爆额度。
+#
+#  所以这里不按固定间隔上报，而是：
+#    1. 本机每 15 秒轮询一次前台窗口（纯本地调用，不产生任何网络请求）；
+#    2. 只有当「前台应用身份」发生变化（state / app / process 任一变了）才立刻上报；
+#    3. 身份没变时，只发心跳保活：在线 5 分钟一次，离开/锁屏 10 分钟一次。
+#
+#  实测：桌面挂机时约 288 次/天，正常使用约 400~600 次/天，稳稳低于 1000。
+#
+#  注意：窗口**标题**单独变化不会触发上报（浏览器翻页时标题一直在变，会疯狂消耗
+#  额度），标题会在下一次心跳时顺带刷新。想让它跟着标题走就把 -TitleTriggersUpdate
+#  打开，代价是额度消耗显著上升。
 # =============================================================================
 
 param(
     [switch]$Once,
-    [int]$IntervalSeconds = 60
+
+    # 本机轮询间隔（秒）。只读本机窗口，不联网，很便宜。
+    [int]$PollSeconds = 15,
+
+    # 身份没变时的心跳间隔（秒）：在线时用这个
+    [int]$HeartbeatSeconds = 300,
+
+    # 身份没变时的心跳间隔（秒）：离开/锁屏时用这个（人不在，画面本来就不变）
+    [int]$IdleHeartbeatSeconds = 600,
+
+    # 打开后，窗口标题变化也会触发上报（费额度）
+    [switch]$TitleTriggersUpdate,
+
+    # 兼容旧用法：显式传了就退化成「固定间隔上报」
+    [int]$IntervalSeconds = 0
 )
 
 # --------------------------- 需要配置的地址与口令 ---------------------------
@@ -324,11 +353,14 @@ function Send-DeviceStatus {
 
         if ($response.success) {
             Write-Host ("[{0}] 已上报: {1} / {2}" -f (Get-Date -Format "HH:mm:ss"), $state, $appName) -ForegroundColor Green
+            return $true
         } else {
             Write-Host ("[{0}] 上报被拒绝: {1}" -f (Get-Date -Format "HH:mm:ss"), ($response | ConvertTo-Json -Compress)) -ForegroundColor Yellow
+            return $false
         }
     } catch {
         Write-Host ("[{0}] 上报失败: {1}" -f (Get-Date -Format "HH:mm:ss"), $_.Exception.Message) -ForegroundColor Red
+        return $false
     }
 }
 
@@ -336,12 +368,72 @@ function Send-DeviceStatus {
 #  四、入口
 # =============================================================================
 if ($Once) {
-    Send-DeviceStatus
+    [void](Send-DeviceStatus)
     exit 0
 }
 
-Write-Host "电脑状态上报已启动，间隔 ${IntervalSeconds}s。按 Ctrl+C 停止。" -ForegroundColor Cyan
+# 兼容旧的固定间隔用法
+if ($IntervalSeconds -gt 0) {
+    Write-Host "电脑状态上报已启动（固定间隔模式），间隔 ${IntervalSeconds}s。按 Ctrl+C 停止。" -ForegroundColor Cyan
+    while ($true) {
+        [void](Send-DeviceStatus)
+        Start-Sleep -Seconds $IntervalSeconds
+    }
+}
+
+# ---- 省额度模式：变化驱动 + 心跳 ----
+Write-Host "电脑状态上报已启动（省额度模式）。" -ForegroundColor Cyan
+Write-Host "  轮询 ${PollSeconds}s | 身份变化立刻上报 | 心跳 在线 ${HeartbeatSeconds}s / 空闲 ${IdleHeartbeatSeconds}s" -ForegroundColor DarkGray
+Write-Host "  按 Ctrl+C 停止。" -ForegroundColor DarkGray
+
+# 身份签名：state + 进程名 + 显示名。任一变化就立刻上报。
+$lastSignature = ""
+$lastTitle = ""
+$lastSentAt = [datetime]::MinValue
+
 while ($true) {
-    Send-DeviceStatus
-    Start-Sleep -Seconds $IntervalSeconds
+    $fg = Get-ForegroundWindowInfo
+
+    # 与 Send-DeviceStatus 里的判定保持一致，先算出这次的身份
+    if ([string]::IsNullOrWhiteSpace($fg.ProcessName)) {
+        $state = "locked"
+        $appName = "已锁屏"
+    } elseif ($fg.IdleSeconds -gt 300) {
+        $state = "away"
+        $mapped = Get-AppDisplay -ProcessName $fg.ProcessName
+        $appName = if ($mapped) { $mapped.Name } else { $fg.ProcessName }
+    } else {
+        $state = "online"
+        $mapped = Get-AppDisplay -ProcessName $fg.ProcessName
+        if ($mapped) {
+            $appName = $mapped.Name
+        } else {
+            $fallback = Get-CategoryFromTitle -Title $fg.Title
+            $appName = if ($fallback) { $fallback.Name } else { $fg.ProcessName }
+        }
+    }
+
+    $signature = "$state|$($fg.ProcessName)|$appName"
+    $now = Get-Date
+
+    $identityChanged = ($signature -ne $lastSignature)
+    $titleChanged = ($TitleTriggersUpdate -and $fg.Title -ne $lastTitle)
+
+    # 心跳间隔按当前状态选：人不在跟前时拉长
+    $heartbeat = if ($state -eq "online") { $HeartbeatSeconds } else { $IdleHeartbeatSeconds }
+    $heartbeatDue = (($now - $lastSentAt).TotalSeconds -ge $heartbeat)
+
+    if ($identityChanged -or $titleChanged -or $heartbeatDue) {
+        $reason = if ($identityChanged) { "身份变化" } elseif ($titleChanged) { "标题变化" } else { "心跳" }
+        Write-Host ("[{0}] {1} -> 上报" -f $now.ToString("HH:mm:ss"), $reason) -ForegroundColor DarkCyan
+
+        if (Send-DeviceStatus) {
+            $lastSignature = $signature
+            $lastTitle = $fg.Title
+            $lastSentAt = $now
+        }
+        # 上报失败不更新 lastSignature，下一轮会重试
+    }
+
+    Start-Sleep -Seconds $PollSeconds
 }

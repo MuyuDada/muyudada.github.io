@@ -18,6 +18,12 @@
 
 const KV_KEY = "device:latest";
 
+// 离线判定阈值（秒）。必须大于上报脚本对应状态的「心跳间隔」，否则会在两次
+// 心跳之间被误判成离线。上报脚本的心跳：online 时 240s，away/locked 时 600s
+// （人不在跟前，画面本来就不会变，没必要频繁写）。
+const STALE_AFTER_SECONDS = { online: 300, away: 720, locked: 720 };
+const DEFAULT_STALE_AFTER_SECONDS = 300;
+
 // 页面侧只读，所以放开通配符；写接口靠 token 保护。
 const CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -113,15 +119,18 @@ export default {
                 return json({ success: false, code: "corrupt_record" }, 500);
             }
 
-            // 超过 3 分钟没上报就认为本机掉线（上报间隔 30s，留足容错）
+            // 离线判定：阈值随上报状态变化。上报脚本在「人不在跟前」时会拉长心跳，
+            // 用一个固定阈值会把正常的心跳间隙误判成离线。
             const ageSeconds = Math.round((Date.now() - (record.reportedAt || 0)) / 1000);
-            const stale = ageSeconds > 180;
+            const threshold = STALE_AFTER_SECONDS[record.state] || DEFAULT_STALE_AFTER_SECONDS;
+            const stale = ageSeconds > threshold;
 
             return json({
                 success: true,
                 online: !stale,
                 stale: stale,
                 ageSeconds: ageSeconds,
+                staleAfterSeconds: threshold,
                 record: record,
             });
         }
