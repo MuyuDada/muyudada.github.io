@@ -30,7 +30,7 @@
 - **一言 Hitokoto**:打字机效果逐字显示,每 20 秒自动刷新
 - **当地时间**:实时时钟 + 中文日期(含星期)与时段问候,每秒更新
 - **天气预报**:基于[和风天气 QWeather](https://www.qweather.com),**自动定位访问者所在地**(浏览器 GPS → IP 定位 → 兜底城市,逐级回退);可展开今日详情(风力、能见度、体感温度、湿度、气压、空气质量、云量、紫外线、降水量、日出日落、污染物浓度)
-- **电脑状态卡**:展示本机当前前台应用(中文名 + 吐槽文案 + 图标)、在线 / 离开 / 锁屏 / 离线状态与窗口标题。纯静态站点读不到本机信息,因此由本机 PowerShell 脚本以「变化驱动 + 心跳」的方式上报到 Cloudflare Worker(前台应用一换就立刻上报,不变时在线 5 分钟一次心跳),页面只读 KV(见 [worker/README.md](worker/README.md))
+- **电脑状态卡**:展示本机当前前台应用(中文名 + 吐槽文案 + 图标)、在线 / 离开 / 锁屏 / 离线状态与窗口标题。纯静态站点读不到本机信息,因此由本机 PowerShell 脚本以「变化驱动 + 心跳」的方式上报到 Cloudflare Worker(前台应用一换就立刻上报,不变时在线 5 分钟一次心跳),页面只读 KV。另有一条 GitHub Gist 备用通道,主通道读不到新鲜数据时自动兜底(见 [worker/README.md](worker/README.md))
 - **音乐播放器**:自研播放器(原生 Audio API)+ Meting 接口加载网易云歌单,支持歌词、播放列表、音量、播放模式
 - **主题设置**:明暗主题切换(Cookie 持久化),背景/卡片的透明度、模糊度与卡片颜色可调(localStorage 持久化)
 - **GitHub 贡献贪吃蛇**:明暗两套 SVG 随主题切换
@@ -87,7 +87,7 @@
 │   ├── wrangler.toml         # KV 绑定与 Worker 名称
 │   └── README.md             # 部署四步 + 接口文档
 ├── tools/                    # 本机上报脚本(Windows PowerShell)
-│   ├── report-device.ps1     # 取前台窗口 + 空闲时长,POST 上报
+│   ├── report-device.ps1     # 取前台窗口 + 空闲时长,POST 上报,并同步一份快照到 Gist
 │   ├── install-device-task.ps1   # 注册开机自启的计划任务
 │   └── uninstall-device-task.ps1 # 卸载计划任务
 ├── Caddyfile                 # Caddy 服务器配置
@@ -152,7 +152,7 @@ docker compose up -d
 | --- | --- | --- |
 | `musicPlaylistConfig.id` | `static/js/script.js` | 网易云歌单 ID(取歌单链接中的 id) |
 | `weatherConfig` | `static/js/script.js` | 天气定位方式、兜底城市与刷新间隔(见下) |
-| `deviceStatusConfig` | `static/js/script.js` | 电脑状态卡:Worker 地址、轮询间隔、进程名→图标映射。`endpoint` 留空则整张卡片自动隐藏 |
+| `deviceStatusConfig` | `static/js/script.js` | 电脑状态卡:Worker 地址、备用通道(Gist)地址、轮询间隔、进程名→图标映射。`endpoint` 与 `fallbackEndpoint` 都留空则整张卡片自动隐藏 |
 | `siteStartTime` | `static/js/script.js` | 建站起始时间(运行时长统计) |
 | 社交链接 / 时间线 / 标签 / 项目卡片 | `index.html` | 按需替换为自己的内容 |
 | 页面标题 / 描述 / 关键词 / ICP 备案号 | `index.html` | `<head>` 与 `<footer>` 中修改 |
@@ -223,10 +223,11 @@ var weatherConfig = {
 
 ```
 本机 PowerShell(变化驱动+心跳)  ──POST──▶  Cloudflare Worker  ──▶  KV
-        ▲                                                      │
-        └────────── 取前台窗口 / 空闲时长                        │
-                                                               ▼
-                                          访客浏览器  ◀──GET──  读取
+        │           ▲                                            │
+        │           └────────── 取前台窗口 / 空闲时长              ▼
+        │                                     访客浏览器  ◀──GET── 读取
+        │
+        └──(每次成功上报后再写一份快照)──▶  GitHub Gist  ◀──GET── 主通道读不到时兜底
 ```
 
 **部署四步**(详细说明见 [worker/README.md](worker/README.md)):
@@ -261,15 +262,28 @@ powershell -ExecutionPolicy Bypass -File tools\install-device-task.ps1
 ```js
 var deviceStatusConfig = {
     endpoint: "https://muyuhome.cc.cd/api/device/status",
+    fallbackEndpoint: "https://gist.githubusercontent.com/<你>/<gist-id>/raw/device.json",  // 备用通道,留空则不用
     refreshIntervalSeconds: 60,     // 前端轮询间隔
     requestTimeoutMs: 8000,         // 单请求超时,超时按离线处理
-    staleAfterSeconds: 300,         // 仅本地参考;权威值在 Worker 侧,由上报的心跳间隔自动推算
+    staleAfterSeconds: 600,         // 仅本地参考;权威值在 Worker 侧,由上报的心跳间隔自动推算
     iconMap: { ... },               // 进程名 → Font Awesome 图标
     keywordIcons: [ ... ]           // 没命中时的关键词兜底
 };
 ```
 
 > 注册计划任务时 `New-ScheduledTaskTrigger -AtLogOn` **必须带 `-User`**。不带 `-User` 的触发器属于「任意用户登录」,注册需要管理员权限,普通账户会直接报 `Access is denied (0x80070005)`;带上当前用户后普通账户即可注册。
+
+#### 备用通道(GitHub Gist)
+
+主通道整条链路都在 Cloudflare 上(域名被污染、Worker 故障、KV 额度耗尽都会失效),所以加了一条完全独立的兜底:
+
+1. 建一个 **secret gist**,里面放一个 `device.json`(内容随意,会被覆盖);
+2. 把 gist id 写进 `tools/gist-id.local`;
+3. 让上报脚本能拿到一个**带 `gist` scope** 的 GitHub 令牌 —— 环境变量 `MUYU_GITHUB_TOKEN`,或写进 `tools/github-token.local`,或直接复用 git 凭据管理器里那个(脚本会自动去取)。
+
+之后每次成功上报都会顺带把同一份 JSON `PATCH` 到 gist(最快 60 秒一次),前端在主通道读不到新鲜数据时改读它。三个 `.local` 文件都已在 `.gitignore` 里。加 `-NoSnapshot` 可整体关掉。
+
+> 实测要点:GitHub raw 走 Fastly CDN,默认 `max-age=300`,但**给 URL 挂一个随机查询串就能让它回 MISS**(缓存键包含 query string),所以前端加了 `?t=<时间戳>` 来保鲜。即便如此仍会读快照里的 `reportedAt` 在本地判一次时效 —— 万一 CDN 还是发了旧副本,也不会把「早就离线」显示成「在线」。快照写入是尽力而为:失败只打一行黄字,绝不影响主通道。
 
 **设计要点**:
 
@@ -280,6 +294,7 @@ var deviceStatusConfig = {
 5. **后台标签页不轮询**:`document.visibilityState !== "visible"` 时跳过,切回前台若距上次成功超过 20 秒立刻补一次 —— 后台定时器会被浏览器降频,不能只依赖 `setInterval`。
 6. **读接口公开、写接口带口令**:与常见做法一致 —— 访客要能看到状态,所以 `GET` 放开跨域;`POST` 必须带 `X-Report-Token`,Worker 侧用恒定时间比较避免逐位爆破。
 7. **省 KV 额度靠「变化驱动」而非「拉长间隔」**:KV 免费额度瓶颈是**写**(每天 1000 次),固定 30 秒上报 = 2880 次/天,必然爆。所以本机每 15 秒读一次前台窗口(纯本地调用,零网络开销),只有应用身份变了才上报,不变时只发心跳(在线 5 分钟、空闲 10 分钟)。这样挂机约 288 写/天,而状态切换依然是**秒级实时**的 —— 拉长上报间隔会牺牲实时性,变化驱动不会。
+8. **两条独立链路互为备份**:主通道走 Cloudflare,备用通道走 GitHub Gist。它们除了「都由本机写」之外没有任何共同依赖,同时挂掉的概率很低。降级判断有三层:主通道请求失败 → 走备用;主通道返回「离线」但备用有更新鲜的快照 → 以备用为准(避免 Cloudflare 那一段的问题被误报成「电脑关机」);两条都失败才显示离线,且**不清空**上次内容。
 
 ## 🧰 技术栈
 

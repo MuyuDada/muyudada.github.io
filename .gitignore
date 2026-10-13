@@ -5,6 +5,10 @@
 # 本机上报口令：不能进公开仓库
 tools/report-token.local
 
+# 备用通道（GitHub Gist）的 gist id 与令牌：同样不能进公开仓库
+tools/gist-id.local
+tools/github-token.local
+
 # wrangler 本地缓存（含账号 id，不进仓库）
 worker/.wrangler/
 .wrangler/

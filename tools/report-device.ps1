@@ -24,6 +24,20 @@
 #  注意：窗口**标题**单独变化不会触发上报（浏览器翻页时标题一直在变，会疯狂消耗
 #  额度），标题会在下一次心跳时顺带刷新。想让它跟着标题走就把 -TitleTriggersUpdate
 #  打开，代价是额度消耗显著上升。
+#
+#  ── 备用通道：同时写一份快照到 GitHub Gist ──────────────────────────────────
+#  Cloudflare 那一段并非永远可靠（自定义域名被污染、Worker 故障、KV 额度耗尽）。
+#  所以每次成功上报后，本脚本会把同一份记录再 PATCH 到自己的一个 secret gist；
+#  页面在主通道读不到新鲜数据时，就退回去读这个快照。
+#
+#  两条通道互相独立，同时挂掉的概率很低。快照写入是**尽力而为**：失败只打一行
+#  黄字，绝不影响主通道，也不会让上报循环退出。
+#
+#  凭据与 gist id 都不进仓库：
+#    · gist id  → tools\gist-id.local
+#    · token    → 环境变量 MUYU_GITHUB_TOKEN，或 tools\github-token.local，
+#                 或自动从 git 凭据管理器里取（需要 gist scope）
+#  用 -NoSnapshot 可以整体关掉这条通道。
 # =============================================================================
 
 param(
@@ -42,7 +56,15 @@ param(
     [switch]$TitleTriggersUpdate,
 
     # 兼容旧用法：显式传了就退化成「固定间隔上报」
-    [int]$IntervalSeconds = 0
+    [int]$IntervalSeconds = 0,
+
+    # 快照最快写入间隔（秒）。每次上报都写会让 gist 的修订历史涨得很快
+    # （gist 保留全部历史），所以加个下限；60 秒与前端轮询节奏对齐，
+    # 正常使用下几乎不会成为瓶颈，频繁切应用时也不会一秒一条。
+    [int]$SnapshotIntervalSeconds = 60,
+
+    # 关掉 GitHub 备用通道（只走 Cloudflare）
+    [switch]$NoSnapshot
 )
 
 # --------------------------- 需要配置的地址与口令 ---------------------------
@@ -81,6 +103,61 @@ if ([string]::IsNullOrWhiteSpace($Endpoint) -or $Endpoint -match "YOUR-SUBDOMAIN
     Write-Host "     或设置环境变量 MUYU_REPORT_TOKEN" -ForegroundColor Red
     exit 1
 }
+
+# --------------------------- 备用通道（GitHub Gist）配置 ---------------------------
+# gist id 同样不进仓库：环境变量 MUYU_GIST_ID → tools\gist-id.local
+$GistId = ""
+if (-not [string]::IsNullOrWhiteSpace($env:MUYU_GIST_ID)) {
+    $GistId = $env:MUYU_GIST_ID.Trim()
+} else {
+    $gistFile = Join-Path $PSScriptRoot "gist-id.local"
+    if (Test-Path $gistFile) {
+        $GistId = (Get-Content $gistFile -Raw -Encoding UTF8).Trim()
+    }
+}
+
+# gist 里那个文件的名字，要和前端 fallbackEndpoint 指向的一致
+$GistFileName = "device.json"
+
+# GitHub 令牌：环境变量 → tools\github-token.local → git 凭据管理器（需要 gist scope）
+$GithubToken = ""
+function Resolve-GithubToken {
+    if (-not [string]::IsNullOrWhiteSpace($GithubToken)) { return $GithubToken }
+    if (-not [string]::IsNullOrWhiteSpace($env:MUYU_GITHUB_TOKEN)) {
+        $GithubToken = $env:MUYU_GITHUB_TOKEN.Trim()
+        return $GithubToken
+    }
+
+    $tokFile = Join-Path $PSScriptRoot "github-token.local"
+    if (Test-Path $tokFile) {
+        $GithubToken = (Get-Content $tokFile -Raw -Encoding UTF8).Trim()
+        return $GithubToken
+    }
+
+    # 最后再试着从 git 凭据管理器里捞一次（本机 push 用的那个令牌通常带 gist scope）
+    try {
+        $stdinFile = Join-Path $env:TEMP "muyu-cred-in.txt"
+        [System.IO.File]::WriteAllText($stdinFile, "protocol=https`nhost=github.com`n`n",
+            (New-Object System.Text.UTF8Encoding($false)))
+        $lines = & cmd /c "git credential fill < `"$stdinFile`" 2>NUL"
+        Remove-Item $stdinFile -ErrorAction SilentlyContinue
+
+        $pwd = ($lines | Where-Object { $_ -like "password=*" }) -replace "^password=", ""
+        if (-not [string]::IsNullOrWhiteSpace($pwd)) {
+            $GithubToken = $pwd.Trim()
+        }
+    } catch {
+        # 取不到就算了，下面会按「未配置」处理
+    }
+
+    return $GithubToken
+}
+
+# 快照通道是否可用：三样都得齐，缺一个就静默关掉（不影响主通道）
+$SnapshotEnabled = (-not $NoSnapshot) -and
+    (-not [string]::IsNullOrWhiteSpace($GistId)) -and
+    (-not [string]::IsNullOrWhiteSpace((Resolve-GithubToken)))
+# ---------------------------------------------------------------------------------
 
 # =============================================================================
 #  一、Win32 互操作：取前台窗口 + 空闲时长
@@ -305,9 +382,51 @@ function Get-HeartbeatForState {
     return $IdleHeartbeatSeconds
 }
 
+# ---------------------------------------------------------------------------
+#  备用通道：把同一份记录 PATCH 到 GitHub Gist
+# ---------------------------------------------------------------------------
+# 这是「尽力而为」的一步：失败只打黄字，不抛异常，也绝不改变主通道的结果。
+# 返回 $true 表示快照确实写出去了。
+$script:LastSnapshotAt = [datetime]::MinValue
+
+function Write-Snapshot {
+    param([string]$Payload)
+
+    if (-not $SnapshotEnabled) { return $false }
+
+    # GitHub raw 走 Fastly CDN，缓存 300 秒；写得比这更勤页面也不会更早看到，
+    # 纯属浪费 API 配额（未认证 60 次/小时，认证 5000 次/小时）。
+    $elapsed = ([datetime]::UtcNow - $script:LastSnapshotAt).TotalSeconds
+    if ($elapsed -lt $SnapshotIntervalSeconds) { return $false }
+
+    try {
+        $body = @{
+            description = "Muyu 主页 · 电脑状态快照（备用通道，主页只读）"
+            files       = @{
+                $GistFileName = @{ content = $Payload }
+            }
+        } | ConvertTo-Json -Depth 4 -Compress
+
+        [void](Invoke-RestMethod -Uri "https://api.github.com/gists/$GistId" -Method Patch `
+            -Headers @{
+                "Authorization" = "token $(Resolve-GithubToken)"
+                "User-Agent"    = "muyu-device-status"
+                "Accept"        = "application/vnd.github+json"
+            } `
+            -ContentType "application/json; charset=utf-8" `
+            -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) `
+            -TimeoutSec 15)
+
+        $script:LastSnapshotAt = [datetime]::UtcNow
+        return $true
+    } catch {
+        Write-Host ("[{0}] 快照写入失败（不影响主通道）: {1}" -f (Get-Date -Format "HH:mm:ss"), $_.Exception.Message) -ForegroundColor Yellow
+        return $false
+    }
+}
+
 function Send-DeviceStatus {
     $fg = Get-ForegroundWindowInfo
-
     # 状态判定：无前台窗口 → 锁屏；空闲超 5 分钟 → 离开
     if ([string]::IsNullOrWhiteSpace($fg.ProcessName)) {
         $state = "locked"
@@ -354,6 +473,9 @@ function Send-DeviceStatus {
         # 当前状态的心跳间隔。Worker 用「心跳 + 容错」算离线阈值，
         # 这样改心跳不用再去动 Worker，两端不会失配。
         heartbeatSeconds = (Get-HeartbeatForState -State $state)
+        # 上报时刻（Unix 毫秒）。主通道不依赖它（Worker 自己盖时间戳），
+        # 但备用通道读的是静态快照，前端必须靠这个字段判时效。
+        reportedAt  = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     } | ConvertTo-Json -Compress
 
     try {
@@ -365,6 +487,7 @@ function Send-DeviceStatus {
 
         if ($response.success) {
             Write-Host ("[{0}] 已上报: {1} / {2}" -f (Get-Date -Format "HH:mm:ss"), $state, $appName) -ForegroundColor Green
+            Write-Snapshot -Payload $payload
             return $true
         } else {
             Write-Host ("[{0}] 上报被拒绝: {1}" -f (Get-Date -Format "HH:mm:ss"), ($response | ConvertTo-Json -Compress)) -ForegroundColor Yellow
@@ -396,6 +519,11 @@ if ($IntervalSeconds -gt 0) {
 # ---- 省额度模式：变化驱动 + 心跳 ----
 Write-Host "电脑状态上报已启动（省额度模式）。" -ForegroundColor Cyan
 Write-Host "  轮询 ${PollSeconds}s | 身份变化立刻上报 | 心跳 在线 ${HeartbeatSeconds}s / 空闲 ${IdleHeartbeatSeconds}s" -ForegroundColor DarkGray
+if ($SnapshotEnabled) {
+    Write-Host "  备用通道已启用：快照最快每 ${SnapshotIntervalSeconds}s 写入一次 Gist。" -ForegroundColor DarkGray
+} else {
+    Write-Host "  备用通道未启用（缺 gist id 或 GitHub 令牌），只走 Cloudflare。" -ForegroundColor DarkGray
+}
 Write-Host "  按 Ctrl+C 停止。" -ForegroundColor DarkGray
 
 # 身份签名：state + 进程名 + 显示名。任一变化就立刻上报。

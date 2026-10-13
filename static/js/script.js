@@ -80,11 +80,27 @@ var deviceStatusConfig = {
     refreshIntervalSeconds: 60,
     // 单个请求超时（毫秒），超时按「离线」处理，不会一直转圈。
     requestTimeoutMs: 8000,
-    // 离线判定的权威值在 Worker 侧（它随上报状态动态调整：在线 300s、空闲 720s），
-    // 并以 staleAfterSeconds 字段回传。这里仅作兜底说明，不参与判断。
-    staleAfterSeconds: 300,
+    // 离线判定阈值（秒）的兜底值。
+    // 主通道的权威值在 Worker 侧（按上报来的 heartbeatSeconds 自动推算，随
+    // staleAfterSeconds 回传）；备用通道没有服务端判活，只能用这里的值配合
+    // 快照里的 heartbeatSeconds 在本地算一遍。
+    staleAfterSeconds: 600,
     // 页面切回前台时，距上次成功刷新超过该秒数就立刻补一次。
     visibilityRefreshAfterSeconds: 20,
+
+    // 备用通道：主通道（Cloudflare Worker）取不到新鲜数据时的兜底来源。
+    // 本机上报脚本会把同一份记录再写一份到 GitHub Gist（见 tools/report-device.ps1），
+    // 这里指向它的 raw 地址。留空 = 不用备用通道。
+    //
+    // 为什么需要它：主通道依赖 Cloudflare（域名被污染、Worker 故障、额度耗尽都可能失效），
+    // 而 GitHub raw 是另一套完全独立的链路，同时挂掉的概率很低。
+    //
+    // 代价：GitHub raw 的 CDN 缓存是 300 秒，不带参数直接读有可能拿到旧副本。
+    // 好在实测给 URL 挂一个随机查询串就能让 CDN 回 MISS（缓存键含 query string），
+    // 所以下面加了 cache-bust 参数，快照基本能保持最新。即便如此，仍要读快照里的
+    // reportedAt 在本地判一次时效 —— 万一 CDN 还是发了旧副本，也不会把
+    // 「早就离线」显示成「在线」。
+    fallbackEndpoint: "https://gist.githubusercontent.com/MuyuDada/ddca5e9cfef3026b2503b56486cbb365/raw/device.json",
 
     // 进程名（小写）→ Font Awesome 图标。
     // 值里带上字体族：品牌图标写 "fa-brands fa-xxx"，通用图标写 "fa-solid fa-xxx"。
@@ -2144,7 +2160,36 @@ function renderDeviceOffline(reason) {
     }
 }
 
-function renderDeviceStatus(payload) {
+// 备用通道拿到的是一份「裸快照」（没有 Worker 包装的 online / stale 字段），
+// 所以这里按和 Worker 一样的规则在本地补算一遍，让两种来源的载荷形状一致。
+//
+// 这一步不能省：GitHub raw 的 CDN 最长缓存 5 分钟，完全可能把一份早就过期的
+// 快照发过来。只有按 reportedAt 在本地判一次时效，才不会把「早就关机」显示成「在线」。
+function normalizeDeviceSnapshot(record) {
+    var heartbeat = Number(record && record.heartbeatSeconds) || 0;
+
+    // 与 worker/device-status-worker.js 的 staleThresholdFor 保持同一套规则：
+    // 阈值 = max(心跳 × 2, 心跳 + 60s)，夹到 [120s, 2 天 + 60s]
+    var threshold = heartbeat > 0
+        ? Math.max(heartbeat * 2, heartbeat + 60)
+        : Number(deviceStatusConfig.staleAfterSeconds) || 600;
+
+    threshold = Math.max(120, Math.min(86400 * 2 + 60, threshold));
+
+    var ageSeconds = Math.round((Date.now() - (Number(record.reportedAt) || 0)) / 1000);
+    var stale = ageSeconds > threshold;
+
+    return {
+        success: true,
+        online: !stale,
+        stale: stale,
+        ageSeconds: ageSeconds,
+        staleAfterSeconds: threshold,
+        record: record
+    };
+}
+
+function renderDeviceStatus(payload, sourceLabel) {
     var els = deviceStatusEls();
 
     if (!els.card) {
@@ -2194,20 +2239,48 @@ function renderDeviceStatus(payload) {
     }
 
     if (els.updated) {
-        els.updated.textContent = formatDeviceAge(record.reportedAt);
+        // 走备用通道时标出来，免得看到一份几分钟前的数据还以为是实时的
+        els.updated.textContent = formatDeviceAge(record.reportedAt) +
+            (sourceLabel ? " · " + sourceLabel : "");
     }
+}
+
+// 备用通道：读 GitHub Gist 上的裸快照，本地补算时效后交给同一个渲染函数。
+// 返回 Promise，reject 表示这条通道也不可用。
+function fetchDeviceFallback() {
+    var fallback = String(deviceStatusConfig.fallbackEndpoint || "").trim();
+
+    if (!fallback) {
+        return Promise.reject(new Error("未配置备用通道"));
+    }
+
+    // Gist raw 走 Fastly CDN，默认 max-age=300，直接读有 5 分钟可能拿到旧副本。
+    // 实测给 URL 挂一个随机查询串就能让它回 MISS（缓存键含 query string），
+    // 所以这里加上 —— 代价是每次都得回源，对这种低流量站点完全可接受。
+    // 即便如此，返回后仍会按 reportedAt 判一次时效（见 normalizeDeviceSnapshot）。
+    var url = fallback + (fallback.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now();
+
+    return fetchWithTimeout(url, deviceStatusConfig.requestTimeoutMs).then(function (response) {
+        return response.json();
+    }).then(function (record) {
+        if (!record || !record.reportedAt) {
+            throw new Error("备用通道快照为空");
+        }
+        return normalizeDeviceSnapshot(record);
+    });
 }
 
 function fetchDeviceStatus(manual) {
     var els = deviceStatusEls();
     var endpoint = String(deviceStatusConfig.endpoint || "").trim();
+    var hasFallback = !!String(deviceStatusConfig.fallbackEndpoint || "").trim();
 
     if (!els.card) {
         return;
     }
 
-    // 没配 endpoint 就当功能未启用，直接藏掉卡片
-    if (!endpoint) {
+    // 主通道和备用通道都没配，就当功能未启用，直接藏掉卡片
+    if (!endpoint && !hasFallback) {
         els.card.hidden = true;
         return;
     }
@@ -2227,15 +2300,46 @@ function fetchDeviceStatus(manual) {
     // 带上时间戳绕开任何中间缓存；Worker 侧本身也是 no-store
     var url = endpoint + (endpoint.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now();
 
-    fetchWithTimeout(url, deviceStatusConfig.requestTimeoutMs).then(function (response) {
-        return response.json();
-    }).then(function (payload) {
-        deviceStatusLastSuccessAt = Date.now();
-        renderDeviceStatus(payload);
+    // 主通道优先。它拿不到数据、或者拿到的已经过期，就退到备用通道。
+    // 两条都失败才算真失败。
+    var primary = endpoint
+        ? fetchWithTimeout(url, deviceStatusConfig.requestTimeoutMs)
+            .then(function (response) { return response.json(); })
+        : Promise.reject(new Error("未配置主通道"));
+
+    primary.then(function (payload) {
+        // 主通道说「离线」时，不急着下结论：可能是 Cloudflare 那一段出问题，
+        // 而本机其实好好的。这时用备用通道交叉验证一次。
+        if (payload && payload.success !== false && payload.online && payload.record) {
+            deviceStatusLastSuccessAt = Date.now();
+            renderDeviceStatus(payload, "");
+            return null;
+        }
+
+        return fetchDeviceFallback().then(function (snapshot) {
+            deviceStatusLastSuccessAt = Date.now();
+            renderDeviceStatus(snapshot, "备用通道");
+            return null;
+        }).catch(function () {
+            // 备用通道也没有更新鲜的说法，就用主通道的结论
+            deviceStatusLastSuccessAt = Date.now();
+            renderDeviceStatus(payload, "");
+            return null;
+        });
     }).catch(function (error) {
-        // 拿不到数据时不清空旧内容，只把状态改成离线，避免卡片闪空
-        console.warn("电脑状态获取失败：" + error.message);
-        renderDeviceOffline("暂时读不到状态，稍后自动重试。");
+        console.warn("电脑状态主通道获取失败：" + error.message);
+
+        return fetchDeviceFallback().then(function (snapshot) {
+            deviceStatusLastSuccessAt = Date.now();
+            renderDeviceStatus(snapshot, "备用通道");
+            return null;
+        }).catch(function (fallbackError) {
+            console.warn("电脑状态备用通道获取失败：" + fallbackError.message);
+
+            // 两条都拿不到时不清空旧内容，只把状态改成离线，避免卡片闪空
+            renderDeviceOffline("暂时读不到状态，稍后自动重试。");
+            return null;
+        });
     }).then(function () {
         deviceStatusInFlight = false;
 
@@ -2252,7 +2356,8 @@ function initDeviceStatus() {
         return;
     }
 
-    if (!String(deviceStatusConfig.endpoint || "").trim()) {
+    if (!String(deviceStatusConfig.endpoint || "").trim() &&
+        !String(deviceStatusConfig.fallbackEndpoint || "").trim()) {
         els.card.hidden = true;
         return;
     }
