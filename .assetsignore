@@ -1,0 +1,33 @@
+# 防呆文件：万一有人在仓库根目录误跑 `wrangler deploy`，wrangler 会把当前目录
+# 整个当静态资源上传（它认的是 assets.directory）。.gitignore 只管 git，**不管
+# wrangler**，所以被 git 忽略的密钥文件照样会被传到 *.workers.dev 上。
+#
+# 2026-10-14 就真的这么翻过一次车：根目录多出一个自动生成的 wrangler.jsonc，
+# 部署了一个 assets.directory="." 的 Worker，把 tools/report-token.local、
+# tools/gist-id.local、.git/config、.wrangler/ 全都挂到了公网 URL 上。
+# 事后删掉了那个 Worker 并轮换了上报口令。
+#
+# 这个文件用 gitignore 语法，列出任何情况下都不该被当静态资源发布的东西。
+# 真正要发布的是 GitHub Pages，走 git 跟踪的文件，跟这里无关。
+
+# ---- 凭据与本地配置 ----
+.git/
+.gitignore
+.assetsignore
+.wrangler/
+**/.wrangler/
+tools/report-token.local
+tools/gist-id.local
+tools/github-token.local
+worker/.dev.vars
+**/.dev.vars
+
+# ---- 不该发布的本地笔记与工具 ----
+tonks-top-实现分析.md
+.workbuddy/
+.workbuddy-ai/
+tools/
+worker/
+
+# ---- 构建与依赖 ----
+node_modules/

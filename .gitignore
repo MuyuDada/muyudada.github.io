@@ -15,3 +15,8 @@ worker/.wrangler/
 
 # 本地分析笔记：只在本地留存，不随站点公开
 tonks-top-实现分析.md
+
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
