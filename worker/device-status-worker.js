@@ -18,11 +18,46 @@
 
 const KV_KEY = "device:latest";
 
-// 离线判定阈值（秒）。必须大于上报脚本对应状态的「心跳间隔」，否则会在两次
-// 心跳之间被误判成离线。上报脚本的心跳：online 时 240s，away/locked 时 600s
-// （人不在跟前，画面本来就不会变，没必要频繁写）。
-const STALE_AFTER_SECONDS = { online: 300, away: 720, locked: 720 };
-const DEFAULT_STALE_AFTER_SECONDS = 300;
+// 离线判定阈值（秒）。
+//
+// 阈值必须大于上报脚本对应状态的「心跳间隔」，否则会在两次心跳之间被误判成离线。
+// 为了不用两头手动对齐，上报脚本会把当前心跳间隔（heartbeatSeconds）一起报上来，
+// 这里按「心跳 × 容错倍数」自动算阈值：
+//   online  心跳 300s → 阈值 600s
+//   away    心跳 600s → 阈值 900s
+// 容错倍数取 2，让网络抖动、一次上报失败都不会立刻翻成离线。
+//
+// 下面的 STALE_AFTER_SECONDS 只是**兜底**：老版本脚本没报 heartbeatSeconds 时用它。
+const STALE_AFTER_SECONDS = { online: 600, away: 900, locked: 900 };
+const DEFAULT_STALE_AFTER_SECONDS = 600;
+const STALE_TOLERANCE_FACTOR = 2;   // 阈值 = 心跳 × 该倍数
+const MIN_STALE_MARGIN = 60;        // 阈值至少比心跳多这么多秒
+const MIN_STALE_SECONDS = 120;      // 阈值下限，防止心跳过小导致误判
+// 阈值上限。必须**大于**上报字段允许的最大心跳（86400s，见 report 里的 clamp），
+// 否则极端心跳下阈值会被压到等于心跳，正常的心跳间隙又会被误判成离线。
+const MAX_STALE_SECONDS = 86400 * 2 + 60;
+
+/**
+ * 由上报的心跳间隔推算离线阈值（秒）。
+ *
+ * 硬性不变量：返回值恒 > heartbeatSeconds，否则设备会在两次正常心跳之间
+ * 被误判成离线。为此取 max(心跳×倍数, 心跳+余量) 而不是单纯乘倍数。
+ */
+function staleThresholdFor(record) {
+    const state = record && record.state;
+    const fallback = STALE_AFTER_SECONDS[state] || DEFAULT_STALE_AFTER_SECONDS;
+
+    const heartbeat = Number(record && record.heartbeatSeconds);
+    if (!Number.isFinite(heartbeat) || heartbeat <= 0) {
+        return fallback;
+    }
+
+    const computed = Math.max(
+        heartbeat * STALE_TOLERANCE_FACTOR,
+        heartbeat + MIN_STALE_MARGIN,
+    );
+    return Math.max(MIN_STALE_SECONDS, Math.min(MAX_STALE_SECONDS, computed));
+}
 
 // 页面侧只读，所以放开通配符；写接口靠 token 保护。
 const CORS_HEADERS = {
@@ -92,6 +127,9 @@ export default {
                 title: clampString(body.title, 160),
                 idleSeconds: Math.max(0, Math.min(86400, Number(body.idleSeconds) || 0)),
                 host: clampString(body.host, 64),
+                // 上报脚本当前的心跳间隔（秒）。读取时据此推算离线阈值，
+                // 这样改心跳只需要改本机脚本，Worker 自动跟随，不会两端失配。
+                heartbeatSeconds: Math.max(0, Math.min(86400, Number(body.heartbeatSeconds) || 0)),
                 reportedAt: Date.now(),
             };
 
@@ -119,10 +157,10 @@ export default {
                 return json({ success: false, code: "corrupt_record" }, 500);
             }
 
-            // 离线判定：阈值随上报状态变化。上报脚本在「人不在跟前」时会拉长心跳，
-            // 用一个固定阈值会把正常的心跳间隙误判成离线。
+            // 离线判定：阈值由上报脚本报上来的心跳间隔自动推算，
+            // 所以改心跳只需改本机脚本，这里自动跟随，不会两端失配。
             const ageSeconds = Math.round((Date.now() - (record.reportedAt || 0)) / 1000);
-            const threshold = STALE_AFTER_SECONDS[record.state] || DEFAULT_STALE_AFTER_SECONDS;
+            const threshold = staleThresholdFor(record);
             const stale = ageSeconds > threshold;
 
             return json({

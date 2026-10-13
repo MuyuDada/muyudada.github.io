@@ -166,6 +166,7 @@ var deviceStatusConfig = {
   "online": true,
   "stale": false,
   "ageSeconds": 12,
+  "staleAfterSeconds": 600,
   "record": {
     "state": "online",
     "app": "VSCode 编辑器",
@@ -174,14 +175,22 @@ var deviceStatusConfig = {
     "title": "script.js - Visual Studio Code",
     "idleSeconds": 3,
     "host": "MUYU-PC",
+    "heartbeatSeconds": 300,
     "reportedAt": 1791819124000
   }
 }
 ```
 
 超过阈值没有上报，`stale` 变为 `true`、`online` 变为 `false`，页面会显示「离线」。
-阈值随上报状态动态调整（在线 300 秒、离开/锁屏 720 秒），并随响应里的
-`staleAfterSeconds` 字段回传，便于前端与调试时确认。
+
+**离线阈值是自动算出来的，不用手动同步。** 上报脚本会把当前状态的心跳间隔
+（`heartbeatSeconds`）一起报上来，Worker 按 `阈值 = 心跳 × 2`（再保证至少比心跳
+多 60 秒，并夹到 `[120s, 2×86400+60s]`）推算，并通过响应里的 `staleAfterSeconds`
+字段回传，便于前端与调试时确认。
+
+这样改心跳**只需要改本机脚本**，Worker 会自动跟随，不会出现「心跳调大了但阈值没跟上，
+正常心跳间隙被误判成离线」的两头失配。老版本脚本没报 `heartbeatSeconds` 时，
+回落到 `STALE_AFTER_SECONDS`（在线 600s、离开/锁屏 900s）。
 
 ---
 
@@ -217,8 +226,8 @@ var deviceStatusConfig = {
 -IntervalSeconds 0         # 显式指定则退化成旧的固定间隔模式
 ```
 
-⚠️ **心跳间隔与 Worker 的离线阈值必须匹配。** Worker 的阈值随状态动态调整
-（在线 300s、空闲 720s）。如果把 `-HeartbeatSeconds` 调得比 300 还大，
-正常的心跳间隙就会被误判成离线。改心跳时记得同步改
-`worker/device-status-worker.js` 里的 `STALE_AFTER_SECONDS`。
+⚠️ **改心跳不用改 Worker。** 上报脚本会把当前心跳间隔一起报上来
+（`heartbeatSeconds` 字段），Worker 按「心跳 × 2」自动推算离线阈值，
+所以调 `-HeartbeatSeconds` / `-IdleHeartbeatSeconds` 后**无需**改动
+`worker/device-status-worker.js`，两端不会失配。
 

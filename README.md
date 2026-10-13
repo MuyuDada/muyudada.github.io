@@ -263,7 +263,7 @@ var deviceStatusConfig = {
     endpoint: "https://muyuhome.cc.cd/api/device/status",
     refreshIntervalSeconds: 60,     // 前端轮询间隔
     requestTimeoutMs: 8000,         // 单请求超时,超时按离线处理
-    staleAfterSeconds: 300,         // 离线阈值兜底说明;权威值在 Worker 侧,随状态动态调整
+    staleAfterSeconds: 300,         // 仅本地参考;权威值在 Worker 侧,由上报的心跳间隔自动推算
     iconMap: { ... },               // 进程名 → Font Awesome 图标
     keywordIcons: [ ... ]           // 没命中时的关键词兜底
 };
@@ -275,7 +275,7 @@ var deviceStatusConfig = {
 
 1. **`endpoint` 留空 = 功能未启用**,JS 会直接把整张卡片 `hidden`,页面上不会留一块空白,所以没部署也可以安心提交。
 2. **上报与展示的职责分离**:应用中文名与吐槽文案在**本机脚本**里映射(那张 100+ 条的 `$AppMap`),Worker 只做字段白名单与长度截断,前端不做业务映射 —— 想加新应用只改本机脚本,不用重新部署前端。
-3. **状态分级**:`online`(在用)/ `away`(空闲 >5 分钟)/ `locked`(无前台窗口,已锁屏)/ `offline`(上报断流)。前三种由本机判断,`offline` 由 Worker 判定;离线阈值随状态动态调整(在线 300 秒、空闲 720 秒),避免把正常的心跳间隙误判成离线,前端拿到 `online:false` 就渲染离线态。
+3. **状态分级**:`online`(在用)/ `away`(空闲 >5 分钟)/ `locked`(无前台窗口,已锁屏)/ `offline`(上报断流)。前三种由本机判断,`offline` 由 Worker 判定。**离线阈值不用手动同步**:上报脚本会把当前心跳间隔(`heartbeatSeconds`)一起报上来,Worker 按「心跳 × 2」自动推算,改心跳只需改本机脚本,两端不会失配;前端拿到 `online:false` 就渲染离线态。
 4. **失败不清空**:请求失败时只把状态角标改成「离线」并保留上一次的内容,避免网络抖动让卡片闪成空白。
 5. **后台标签页不轮询**:`document.visibilityState !== "visible"` 时跳过,切回前台若距上次成功超过 20 秒立刻补一次 —— 后台定时器会被浏览器降频,不能只依赖 `setInterval`。
 6. **读接口公开、写接口带口令**:与常见做法一致 —— 访客要能看到状态,所以 `GET` 放开跨域;`POST` 必须带 `X-Report-Token`,Worker 侧用恒定时间比较避免逐位爆破。

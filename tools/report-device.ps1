@@ -296,6 +296,15 @@ function Get-CategoryFromTitle {
 # =============================================================================
 #  三、组装并上报一条状态
 # =============================================================================
+
+# 当前状态对应的心跳间隔（秒）。这个值会随上报一起发给 Worker，
+# Worker 据此自动算出离线阈值 —— 所以调心跳**不需要**再去改 Worker。
+function Get-HeartbeatForState {
+    param([string]$State)
+    if ($State -eq "online") { return $HeartbeatSeconds }
+    return $IdleHeartbeatSeconds
+}
+
 function Send-DeviceStatus {
     $fg = Get-ForegroundWindowInfo
 
@@ -342,6 +351,9 @@ function Send-DeviceStatus {
         title       = $cleanTitle
         idleSeconds = $fg.IdleSeconds
         host        = $env:COMPUTERNAME
+        # 当前状态的心跳间隔。Worker 用「心跳 + 容错」算离线阈值，
+        # 这样改心跳不用再去动 Worker，两端不会失配。
+        heartbeatSeconds = (Get-HeartbeatForState -State $state)
     } | ConvertTo-Json -Compress
 
     try {
@@ -420,7 +432,7 @@ while ($true) {
     $titleChanged = ($TitleTriggersUpdate -and $fg.Title -ne $lastTitle)
 
     # 心跳间隔按当前状态选：人不在跟前时拉长
-    $heartbeat = if ($state -eq "online") { $HeartbeatSeconds } else { $IdleHeartbeatSeconds }
+    $heartbeat = Get-HeartbeatForState -State $state
     $heartbeatDue = (($now - $lastSentAt).TotalSeconds -ge $heartbeat)
 
     if ($identityChanged -or $titleChanged -or $heartbeatDue) {
