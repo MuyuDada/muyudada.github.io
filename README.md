@@ -44,7 +44,7 @@
 - **卡片式布局**:个人资料卡(头像 + 别名 + 所在地 + 座右铭 + 标签)、一言卡、时间天气卡、音乐卡、最新文章卡
 - **时间天气卡**:与主页 1 同源的定位链与和风天气数据,左右两列中间以分隔线对齐卡片几何中心
 - **音乐卡**:与主页 1 同一套播放器逻辑(歌词抽屉 / 列表抽屉展开时,同排卡片自动等高)
-- **最新文章卡**:读取本地文章快照 `data/posts.json`,条数不设上限;卡片高度固定,文章多则内部滚动
+- **最新文章卡**:读取本地文章快照 `data/posts.json`,条数不设上限;卡片高度固定,文章多则内部滚动。快照由 `tools/sync-posts.mjs` 从博客 atom 订阅源生成,仓库里配了 GitHub Actions 每天自动同步一次
 - **终端模式**:**双击头像卡片**进入,支持 `help` / `cd` / `visit` / `douyin` 等命令
 - **右键菜单**:赞赏、全屏、刷新、返回、切换模式、联系方式、关闭
 - **随机背景**:随机背景壁纸 + 随机前景人物立绘,配合 Parallax 视差与 NodeCursor 跟随光标
@@ -74,7 +74,7 @@
 │   │   ├── rss.js            # 最新文章卡片
 │   │   ├── terminal.js       # 终端模式
 │   │   └── ...               # main / tab / Text / Right / loading / suiji-picture 等
-│   ├── data/posts.json       # 博客文章快照
+│   ├── data/posts.json       # 博客文章快照(由 tools/sync-posts.mjs 生成)
 │   └── static/img/           # 主页 2 自有图片(头像、二维码、图标)
 ├── static/                   # 主页 1 资源
 │   ├── css/                  # style.css / root.css(主题变量)
@@ -89,7 +89,10 @@
 ├── tools/                    # 本机上报脚本(Windows PowerShell)
 │   ├── report-device.ps1     # 取前台窗口 + 空闲时长,POST 上报,并同步一份快照到 Gist
 │   ├── install-device-task.ps1   # 注册开机自启(计划任务 + 启动文件夹快捷方式)
-│   └── uninstall-device-task.ps1 # 卸载自启与运行中的实例
+│   ├── uninstall-device-task.ps1 # 卸载自启与运行中的实例
+│   └── sync-posts.mjs        # 抓博客 atom 订阅源,生成主页 2 的文章快照
+├── .github/workflows/        # GitHub Actions
+│   └── sync-posts.yml        # 每天自动跑一次 sync-posts.mjs 并提交快照
 ├── Caddyfile                 # Caddy 服务器配置
 ├── Dockerfile                # 基于 caddy:alpine 的镜像
 └── docker-compose.yaml       # Docker Compose 编排
@@ -164,7 +167,8 @@ docker compose up -d
 | --- | --- | --- |
 | `dwWeatherConfig` | `jianjie/js/dashboard.js` | 天气定位与和风天气 Key(与主页 1 同结构) |
 | `musicPlaylistConfig.id` | `jianjie/js/music.js` | 网易云歌单 ID |
-| 文章快照 | `jianjie/data/posts.json` | 最新文章卡的数据源,重新生成即可更新 |
+| 文章快照 | `jianjie/data/posts.json` | 最新文章卡的数据源,由 `tools/sync-posts.mjs` 生成,别手改 |
+| 文章快照自动同步 | `.github/workflows/sync-posts.yml` | 每天 04:00(UTC+8)跑一次;也可在 Actions 页手动触发 |
 | 随机背景 / 前景图 | `jianjie/js/suiji-picture.js` | 两组图片 URL 数组 |
 | 社交链接 / 站点合集 / 个人项目 | `jianjie/index.html` | 按需替换 |
 | PWA 名称与图标 | `jianjie/manifest.json` | 应用名、主题色、图标 |
@@ -172,6 +176,21 @@ docker compose up -d
 
 > ⚠️ **改了主页 2 的 CSS / JS 后,必须把 `jianjie/service-worker.js` 的 `cacheName` 版本号 +1**。
 > 该 Service Worker 是 **cache-first** 且安装时预缓存全部样式与脚本,不升版本号线上用户会一直拿到旧文件。
+
+### 主页 2 文章快照
+
+主页 2 的「最新文章」卡读的是静态快照 `jianjie/data/posts.json`。博客站点没开 CORS,浏览器无法跨域直接抓订阅源,所以快照必须在构建期(或本机)生成好:
+
+```bash
+node tools/sync-posts.mjs        # 抓 atom 订阅源 → 写 jianjie/data/posts.json
+```
+
+仓库里配了 GitHub Actions(`.github/workflows/sync-posts.yml`),每天 04:00(UTC+8)自动跑一次,快照有变化才提交。也可以在 GitHub 的 Actions 页面手动触发(`workflow_dispatch`)。
+
+**两个坑**:
+
+1. **Service Worker 会把 `data/posts.json` 也缓存住。** 原来的 fetch 是 cache-first,快照更新了用户还是看到旧文章。现在 SW 对 `/data/` 下的请求改成**网络优先**,只有断网时才退回缓存 —— 加了新的会变数据时记得也走这条路径。
+2. **博客自己的 atom 里有几篇 1970 年的占位文章**(Firefly 模板自带的示例页)。快照会**如实照搬**上游的日期,不做猜测性修正 —— 与其替上游编一个日期,不如把原始数据原样呈现。
 
 ### 天气定位说明
 

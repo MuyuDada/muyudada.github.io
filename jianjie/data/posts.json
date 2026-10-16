@@ -1,93 +1,103 @@
 {
-    "generated":  "2026-10-11T13:37:17",
-    "feed":  null,
-    "home":  "https://muyudada.dpdns.org/",
-    "title":  "Muyuの小窝",
-    "items":  [
-                  {
-                      "title":  "用 GitHub Actions 每天给 TA 发一封情书邮件",
-                      "url":  "https://muyudada.dpdns.org/posts/daily-love-mail/",
-                      "date":  "2026-10-10T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为Firefly添加鼠标跟随与输入特效",
-                      "url":  "https://muyudada.dpdns.org/posts/mouse-interaction-effects/",
-                      "date":  "2026-10-06T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "OpenList 搭建、使用与美化：从零做一个自己的私人网盘",
-                      "url":  "https://muyudada.dpdns.org/posts/openlist-guide/",
-                      "date":  "2026-10-05T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为 Firefly 升级分类页：玫瑰图与标签关系图",
-                      "url":  "https://muyudada.dpdns.org/posts/firefly-categories-page/",
-                      "date":  "2026-09-29T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为 Firefly 升级归档页：双热力图与三级时间轴",
-                      "url":  "https://muyudada.dpdns.org/posts/firefly-archive-page/",
-                      "date":  "2026-09-28T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为 Firefly 打造友链页：Tag 筛选、分页、延时徽章与申请弹窗",
-                      "url":  "https://muyudada.dpdns.org/posts/firefly-friends-page/",
-                      "date":  "2026-09-28T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为 Firefly 添加 Umami 访问统计卡片",
-                      "url":  "https://muyudada.dpdns.org/posts/umami-stats/",
-                      "date":  "2026-09-26T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为 Firefly 添加天气预报侧边栏组件",
-                      "url":  "https://muyudada.dpdns.org/posts/weather-sidebar/",
-                      "date":  "2026-09-24T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为Firefly添加年度进度侧栏组件",
-                      "url":  "https://muyudada.dpdns.org/posts/year-progress/",
-                      "date":  "2026-09-20T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "简约个人主页",
-                      "url":  "https://muyudada.dpdns.org/posts/jian-yue-ge-ren-zhu-ye/",
-                      "date":  "2026-09-14T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "Firefly 魔改：时间进度与节假日倒计时组件",
-                      "url":  "https://muyudada.dpdns.org/posts/schedule-progress/",
-                      "date":  "2026-09-02T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "恋爱计时组件",
-                      "url":  "https://muyudada.dpdns.org/posts/RelationshipTimer/",
-                      "date":  "2026-08-31T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为Firefly添加时段问候实时时钟组件",
-                      "url":  "https://muyudada.dpdns.org/posts/time-greeting/",
-                      "date":  "2026-08-28T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "为Firefly添加IP定位欢迎弹窗",
-                      "url":  "https://muyudada.dpdns.org/posts/welcome-toast/",
-                      "date":  "2026-08-28T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "Firefly 布局系统详解",
-                      "url":  "https://muyudada.dpdns.org/posts/guide/firefly-layout-system/",
-                      "date":  "1970-01-03T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "Firefly Wiki Link 内部链接示例",
-                      "url":  "https://muyudada.dpdns.org/posts/guide/firefly-wiki-link/",
-                      "date":  "1970-01-03T00:00:00.000Z"
-                  },
-                  {
-                      "title":  "Firefly 简单使用指南",
-                      "url":  "https://muyudada.dpdns.org/posts/guide/",
-                      "date":  "1970-01-02T00:00:00.000Z"
-                  }
-              ]
+  "generated": "2026-10-16T17:17:59",
+  "feed": "https://muyudada.dpdns.org/atom.xml",
+  "home": "https://muyudada.dpdns.org/",
+  "title": "Muyuの小窝",
+  "items": [
+    {
+      "title": "为 Firefly 添加「电脑状态」侧栏卡片：实时展示本机在用什么",
+      "url": "https://muyudada.dpdns.org/posts/device-status-card/",
+      "date": "2026-10-12T00:00:00.000Z"
+    },
+    {
+      "title": "为 Firefly 添加全屏页面加载动画：一只端着汉堡的像素小猫",
+      "url": "https://muyudada.dpdns.org/posts/firefly-page-loader/",
+      "date": "2026-10-12T00:00:00.000Z"
+    },
+    {
+      "title": "用 GitHub Actions 每天给 TA 发一封情书邮件",
+      "url": "https://muyudada.dpdns.org/posts/daily-love-mail/",
+      "date": "2026-10-10T00:00:00.000Z"
+    },
+    {
+      "title": "为Firefly添加鼠标跟随与输入特效",
+      "url": "https://muyudada.dpdns.org/posts/mouse-interaction-effects/",
+      "date": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "title": "OpenList 搭建、使用与美化：从零做一个自己的私人网盘",
+      "url": "https://muyudada.dpdns.org/posts/openlist-guide/",
+      "date": "2026-10-05T00:00:00.000Z"
+    },
+    {
+      "title": "为 Firefly 升级分类页：玫瑰图与标签关系图",
+      "url": "https://muyudada.dpdns.org/posts/firefly-categories-page/",
+      "date": "2026-09-29T00:00:00.000Z"
+    },
+    {
+      "title": "为 Firefly 升级归档页：双热力图与三级时间轴",
+      "url": "https://muyudada.dpdns.org/posts/firefly-archive-page/",
+      "date": "2026-09-28T00:00:00.000Z"
+    },
+    {
+      "title": "为 Firefly 打造友链页：Tag 筛选、分页、延时徽章与申请弹窗",
+      "url": "https://muyudada.dpdns.org/posts/firefly-friends-page/",
+      "date": "2026-09-28T00:00:00.000Z"
+    },
+    {
+      "title": "为 Firefly 添加 Umami 访问统计卡片",
+      "url": "https://muyudada.dpdns.org/posts/umami-stats/",
+      "date": "2026-09-26T00:00:00.000Z"
+    },
+    {
+      "title": "为 Firefly 添加天气预报侧边栏组件",
+      "url": "https://muyudada.dpdns.org/posts/weather-sidebar/",
+      "date": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "title": "为Firefly添加年度进度侧栏组件",
+      "url": "https://muyudada.dpdns.org/posts/year-progress/",
+      "date": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "title": "简约个人主页",
+      "url": "https://muyudada.dpdns.org/posts/jian-yue-ge-ren-zhu-ye/",
+      "date": "2026-09-14T00:00:00.000Z"
+    },
+    {
+      "title": "Firefly 魔改：时间进度与节假日倒计时组件",
+      "url": "https://muyudada.dpdns.org/posts/schedule-progress/",
+      "date": "2026-09-02T00:00:00.000Z"
+    },
+    {
+      "title": "恋爱计时组件",
+      "url": "https://muyudada.dpdns.org/posts/RelationshipTimer/",
+      "date": "2026-08-31T00:00:00.000Z"
+    },
+    {
+      "title": "为Firefly添加时段问候实时时钟组件",
+      "url": "https://muyudada.dpdns.org/posts/time-greeting/",
+      "date": "2026-08-28T00:00:00.000Z"
+    },
+    {
+      "title": "为Firefly添加IP定位欢迎弹窗",
+      "url": "https://muyudada.dpdns.org/posts/welcome-toast/",
+      "date": "2026-08-28T00:00:00.000Z"
+    },
+    {
+      "title": "Firefly 布局系统详解",
+      "url": "https://muyudada.dpdns.org/posts/guide/firefly-layout-system/",
+      "date": "1970-01-03T00:00:00.000Z"
+    },
+    {
+      "title": "Firefly Wiki Link 内部链接示例",
+      "url": "https://muyudada.dpdns.org/posts/guide/firefly-wiki-link/",
+      "date": "1970-01-03T00:00:00.000Z"
+    },
+    {
+      "title": "Firefly 简单使用指南",
+      "url": "https://muyudada.dpdns.org/posts/guide/",
+      "date": "1970-01-02T00:00:00.000Z"
+    }
+  ]
 }

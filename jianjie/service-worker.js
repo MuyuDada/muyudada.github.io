@@ -1,7 +1,14 @@
 /* Service Worker —— Muyu 简洁主页
  * 原模板预缓存了上游作者的 CDN 资源，这里改为仅缓存本站自有资源。
+ *
+ * 策略：
+ *   - 静态资源（HTML / CSS / JS / 图片）走「缓存优先」，省流量、离线可用。
+ *   - data/ 下的快照走「网络优先」，否则文章列表更新了用户也看不到。
+ *
+ * 改了预缓存清单或想强制刷新时，把下面的版本号 +1 即可 ——
+ * 文件内容一变，浏览器就会装新 SW，activate 里会删掉旧缓存。
  */
-var cacheName = 'Muyu-简洁主页-v1.0.8';
+var cacheName = 'Muyu-简洁主页-v1.0.9';
 
 var urlsToCache = [
     './index.html',
@@ -63,6 +70,28 @@ self.addEventListener('fetch', function (event) {
     var url = new URL(request.url);
     // 只接管同源请求，第三方接口 / CDN 直接放行
     if (url.origin !== self.location.origin) return;
+
+    // data/ 下的快照是会变的内容（文章列表由定时任务更新）。
+    // 对这些请求必须「网络优先」，否则缓存优先会让用户一直看到旧文章，
+    // 快照更新了也白搭。网络失败时才退回缓存。
+    var isMutableData = /\/data\//.test(url.pathname);
+
+    if (isMutableData) {
+        event.respondWith(
+            fetch(request).then(function (response) {
+                if (response && response.status === 200 && response.type === 'basic') {
+                    var copy = response.clone();
+                    caches.open(cacheName).then(function (cache) {
+                        cache.put(request, copy);
+                    });
+                }
+                return response;
+            }).catch(function () {
+                return caches.match(request);
+            })
+        );
+        return;
+    }
 
     event.respondWith(
         caches.match(request).then(function (cached) {

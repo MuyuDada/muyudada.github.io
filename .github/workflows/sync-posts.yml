@@ -1,0 +1,49 @@
+name: 同步博客文章快照
+
+# 主页 2（jianjie）的「最新文章」卡片读的是本地快照 jianjie/data/posts.json。
+# 博客站点没开 CORS，浏览器无法直接跨域抓 atom.xml，所以只能在这里定时同步。
+#
+# 顺带一提：GitHub Pages 是 legacy 构建（source=main/，非 Actions 部署），
+# 所以本 workflow 不会影响站点发布，只是往 main 提交一次快照文件。
+# 记得在仓库 Settings → Actions → General 里把 Workflow permissions 设为
+# "Read and write permissions"，否则最后一步 push 会 403。
+
+on:
+  schedule:
+    # 每天 20:00 UTC = 次日 04:00 (UTC+8)，避开整点高峰
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-posts
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 同步文章快照
+        run: node tools/sync-posts.mjs
+
+      - name: 有变化则提交
+        run: |
+          if git diff --quiet -- jianjie/data/posts.json; then
+            echo "快照无变化，跳过提交。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add jianjie/data/posts.json
+          git commit -m "chore(posts): 自动同步博客文章快照"
+          git push
