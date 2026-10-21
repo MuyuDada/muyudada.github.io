@@ -1,9 +1,14 @@
 {
-  "generated": "2026-10-16T22:31:43",
+  "generated": "2026-10-21T23:01:15",
   "feed": "https://muyudada.dpdns.org/atom.xml",
   "home": "https://muyudada.dpdns.org/",
   "title": "Muyuの小窝",
   "items": [
+    {
+      "title": "为 Firefly 添加站点日历页面：节日、农历、节气与发文日同框",
+      "url": "https://muyudada.dpdns.org/posts/firefly-calendar-page/",
+      "date": "2026-10-21T00:00:00.000Z"
+    },
     {
       "title": "把 Shirone 的配色风格、配色规范与背景纹理移植到 Firefly",
       "url": "https://muyudada.dpdns.org/posts/firefly-shirone-color-texture/",
