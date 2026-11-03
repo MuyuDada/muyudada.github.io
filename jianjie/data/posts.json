@@ -1,9 +1,14 @@
 {
-  "generated": "2026-10-30T23:27:35",
+  "generated": "2026-11-03T02:00:01",
   "feed": "https://muyudada.dpdns.org/atom.xml",
   "home": "https://muyudada.dpdns.org/",
   "title": "Muyuの小窝",
   "items": [
+    {
+      "title": "在 Folia 里跑洛雪自定义源：folia-lx-source-bridge 的设计与实现",
+      "url": "https://muyudada.dpdns.org/posts/folia-lx-source-bridge/",
+      "date": "2026-11-02T00:00:00.000Z"
+    },
     {
       "title": "给音乐播放器换上 Nyan Cat 进度条",
       "url": "https://muyudada.dpdns.org/posts/nyan-cat-progress/",
