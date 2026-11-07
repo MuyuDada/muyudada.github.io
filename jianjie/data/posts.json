@@ -1,9 +1,14 @@
 {
-  "generated": "2026-11-03T02:00:01",
+  "generated": "2026-11-07T23:24:40",
   "feed": "https://muyudada.dpdns.org/atom.xml",
   "home": "https://muyudada.dpdns.org/",
   "title": "Muyuの小窝",
   "items": [
+    {
+      "title": "给博客导航栏复刻 Apple 液态玻璃（Liquid Glass）",
+      "url": "https://muyudada.dpdns.org/posts/liquid-glass-navbar/",
+      "date": "2026-11-08T00:00:00.000Z"
+    },
     {
       "title": "在 Folia 里跑洛雪自定义源：folia-lx-source-bridge 的设计与实现",
       "url": "https://muyudada.dpdns.org/posts/folia-lx-source-bridge/",
