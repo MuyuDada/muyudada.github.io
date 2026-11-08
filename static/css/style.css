@@ -3,8 +3,9 @@
    --------------------------------------------------------------------------
    设计思路：
    1. 一切颜色 / 圆角 / 间距 / 阴影都收敛为 CSS 变量，组件只引用变量；
-   2. 卡片统一使用「玻璃拟态」配方：半透明底 + 背景模糊 + 顶部内高光 +
-      渐变光泽 + 细描边 + 分层柔和阴影；
+   2. 卡片统一使用「液态玻璃 Liquid Glass」配方：半透明底 + 背景磨砂 +
+      SVG 液态扭曲折射（#liquid-glass-distortion，定义在 index.html）+
+      斜面内高光 + 细描边 + 分层柔和阴影；
    3. 明暗两套主题分别定义在 html[data-theme="Light"] / html[data-theme="Dark"]，
       亮色为通透冷白玻璃，暗色为深空墨蓝玻璃，两套对比明确；
    4. 布局使用统一的间距与圆角节奏，栅格与卡片边缘对齐。
@@ -72,12 +73,12 @@
 html[data-theme="Light"] {
     color-scheme: light;
 
-    /* 运行时由 JS 覆盖的动态变量（默认值与 script.js 一致） */
+    /* 运行时由 JS 覆盖的动态变量（默认值与 script.js 一致；亮色配方对齐 CodePen 原版） */
     --card-base-rgb: 239, 246, 252;
     --backdrop-rgb: 255, 255, 255;
     --background-opacity: 0.2;
-    --card-opacity: 0.62;
-    --card_filter: 12px;
+    --card-opacity: 0.25;
+    --card_filter: 3px;
     --back_filter: 10px;
 
     /* 文本层级 */
@@ -96,11 +97,12 @@ html[data-theme="Light"] {
     --item_bg_color: rgba(var(--card-base-rgb), var(--card-opacity));
     --item_hover_color: rgba(255, 255, 255, 0.8);
     --left_tag_item: rgba(255, 255, 255, 0.62);
-    --glass-sheen:
-        radial-gradient(120% 130% at 8% -30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 62%),
-        linear-gradient(165deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.02) 48%, rgba(255, 255, 255, 0.2) 100%);
+    /* 液态玻璃：受光的斜面高光（左上亮、右下柔），替换旧的单向顶部内高光 */
+    --glass-shine:
+        inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5);
+    --glass-edge: rgba(255, 255, 255, 0.45);
     --glass-top: rgba(255, 255, 255, 0.9);
-    --glass-tint: rgba(255, 255, 255, 0.38);
     --card-border: rgba(255, 255, 255, 0.7);
     --card-border-soft: rgba(126, 156, 194, 0.22);
     --hairline: rgba(84, 116, 158, 0.26);
@@ -142,7 +144,7 @@ html[data-theme="Dark"] {
     --card-base-rgb: 24, 30, 42;
     --backdrop-rgb: 8, 12, 20;
     --background-opacity: 0.38;
-    --card-opacity: 0.78;
+    --card-opacity: 0.6;
     --card_filter: 18px;
     --back_filter: 12px;
 
@@ -162,11 +164,12 @@ html[data-theme="Dark"] {
     --item_bg_color: rgba(var(--card-base-rgb), var(--card-opacity));
     --item_hover_color: rgba(255, 255, 255, 0.12);
     --left_tag_item: rgba(255, 255, 255, 0.12);
-    --glass-sheen:
-        radial-gradient(120% 130% at 8% -30%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 60%),
-        linear-gradient(165deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.05) 100%);
+    /* 液态玻璃：暗色下斜面高光收暗，只留隐约的受光边 */
+    --glass-shine:
+        inset 2px 2px 1px 0 rgba(255, 255, 255, 0.26),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.16);
+    --glass-edge: rgba(255, 255, 255, 0.14);
     --glass-top: rgba(255, 255, 255, 0.16);
-    --glass-tint: rgba(255, 255, 255, 0.04);
     --card-border: rgba(255, 255, 255, 0.14);
     --card-border-soft: rgba(255, 255, 255, 0.08);
     --hairline: rgba(255, 255, 255, 0.12);
@@ -474,7 +477,14 @@ content {
     box-shadow: 0 12px 30px -14px rgba(23, 43, 74, 0.35);
 }
 
-/* ====================== 玻璃卡片（统一配方） ====================== */
+/* ====================== 液态玻璃卡片（Liquid Glass 配方） ======================
+   结构对齐 liquid glass 三层做法，全部用伪元素实现，无需改 HTML：
+   1. 卡片本体：半透明底色（tint）+ 细描边 + 外阴影；
+   2. ::before（z:-2）折射层：backdrop-filter 磨砂背景，大卡片再叠加
+      index.html 里的 SVG 滤镜 #liquid-glass-distortion 做液态扭曲；
+   3. ::after（z:-1）斜面高光：两组 inset 阴影勾出受光的左上边和背光的右下边。
+   isolation: isolate 让两个负层级伪元素垫在卡片底色之上、内容之下，
+   同时不会掉到页面背景后面。 */
 .left-div,
 .music-card,
 .projectItem,
@@ -484,12 +494,59 @@ content {
 .switch,
 .theme-settings-toggle,
 #fps {
+    position: relative;
+    isolation: isolate;
     background-color: var(--item_bg_color);
-    background-image: var(--glass-sheen);
-    border: 1px solid var(--card-border);
+    border: 1px solid var(--glass-edge);
+    box-shadow: var(--card-shadow);
+}
+
+/* 玻璃折射层：磨砂。放在伪元素上而非卡片本体，避免与本体模糊叠加成双重模糊 */
+.left-div::before,
+.music-card::before,
+.projectItem::before,
+.footer-inner::before,
+.theme-settings-panel::before,
+.iconItem::before,
+.switch::before,
+.theme-settings-toggle::before,
+#fps::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    border-radius: inherit;
+    pointer-events: none;
     backdrop-filter: blur(var(--card_filter)) saturate(160%);
     -webkit-backdrop-filter: blur(var(--card_filter)) saturate(160%);
-    box-shadow: var(--card-shadow), inset 0 1px 0 var(--glass-top);
+}
+
+/* 大卡片在磨砂之上再叠加 SVG 液态扭曲；小控件只做磨砂，节省性能 */
+.left-div::before,
+.music-card::before,
+.projectItem::before,
+.footer-inner::before,
+.theme-settings-panel::before {
+    filter: url(#liquid-glass-distortion);
+}
+
+/* 玻璃斜面高光：左上受光边 + 右下背光边 */
+.left-div::after,
+.music-card::after,
+.projectItem::after,
+.footer-inner::after,
+.theme-settings-panel::after,
+.iconItem::after,
+.switch::after,
+.theme-settings-toggle::after,
+#fps::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: var(--glass-shine);
 }
 
 .left-div {
@@ -1744,7 +1801,7 @@ header {
     width: 95px;
     transform: translateY(-3px);
     background-color: var(--item_hover_color);
-    box-shadow: var(--hover-shadow), inset 0 1px 0 var(--glass-top);
+    box-shadow: var(--hover-shadow);
 }
 
 .iconTip {
@@ -1840,7 +1897,7 @@ header {
 
 .projectItem:hover {
     transform: translateY(-4px);
-    box-shadow: var(--hover-shadow), inset 0 1px 0 var(--glass-top);
+    box-shadow: var(--hover-shadow);
     border-color: color-mix(in srgb, var(--purple_text_color) 34%, var(--card-border));
 }
 
@@ -1953,7 +2010,7 @@ footer {
 
 .footer-inner:hover {
     transform: translateY(-3px);
-    box-shadow: var(--hover-shadow), inset 0 1px 0 var(--glass-top);
+    box-shadow: var(--hover-shadow);
 }
 
 .footer-sep {
@@ -2170,7 +2227,7 @@ footer {
 .theme-settings-toggle[aria-expanded="true"] {
     background-color: var(--item_hover_color);
     transform: translateY(-3px);
-    box-shadow: var(--hover-shadow), inset 0 1px 0 var(--glass-top);
+    box-shadow: var(--hover-shadow);
 }
 
 /* 面板向下弹出，且不再处于任何 overflow 滚动容器内，不会被裁切或遮挡 */
@@ -2291,6 +2348,15 @@ footer {
 }
 
 @media (max-width: 800px) {
+    /* SVG 液态扭曲在低配手机上开销大，移动端退回普通磨砂玻璃 */
+    .left-div::before,
+    .music-card::before,
+    .projectItem::before,
+    .footer-inner::before,
+    .theme-settings-panel::before {
+        filter: none;
+    }
+
     .zyyo-left {
         display: none;
     }

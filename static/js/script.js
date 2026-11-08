@@ -1573,14 +1573,14 @@ document.addEventListener('DOMContentLoaded', function () {
         Light: {
             backgroundOpacity: "0.2",
             backgroundBlur: "10",
-            cardOpacity: "0.62",
-            cardBlur: "12",
+            cardOpacity: "0.25",
+            cardBlur: "3",
             cardColor: "#eff6fc"
         },
         Dark: {
             backgroundOpacity: "0.38",
             backgroundBlur: "12",
-            cardOpacity: "0.78",
+            cardOpacity: "0.6",
             cardBlur: "18",
             cardColor: "#181e2a"
         }
