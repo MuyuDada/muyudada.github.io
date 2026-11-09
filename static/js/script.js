@@ -1616,6 +1616,13 @@ document.addEventListener('DOMContentLoaded', function () {
         tanChiShe.src = theme == "Dark"
             ? "https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake-dark.svg"
             : "https://raw.githubusercontent.com/MuyuDada/MuyuDada/output/github-snake.svg";
+        // 签名动画：深色用霓虹版，浅色用墨迹版，重新赋 src 顺便让动画从头播放
+        var signatureArt = document.getElementById("signatureArt");
+        if (signatureArt) {
+            signatureArt.src = theme == "Dark"
+                ? "./static/svg/muyudada-logo.svg"
+                : "./static/svg/muyudada-ink.svg";
+        }
         html.dataset.theme = theme;
         setCookie("themeState", theme, 365);
         themeState = theme;

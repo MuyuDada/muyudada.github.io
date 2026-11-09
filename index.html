@@ -112,10 +112,21 @@
 				<img style="position: absolute;top:-15%;left:-10%;width: 120%; aspect-ratio: 1/1;"
 					src="./static/img/logokuang.png">
 			</div>
+			<!-- 手写签名动画：矢量 SVG，浅色用墨迹版、深色用霓虹版，随主题即时切换 -->
 			<div class="signature-card left-div left-des" role="img" aria-label="MuyuDada 手写签名动画">
-				<video src="https://muyuimg.cc.cd/file/blog/Me8XnI0a.webm" type="video/quicktime" autoplay muted
-					playsinline preload="auto"></video>
+				<img id="signatureArt" class="signature-art" src="./static/svg/muyudada-ink.svg" width="1920"
+					height="1080" alt="MuyuDada 手写签名" decoding="async">
 			</div>
+			<script>
+				// 在首帧前就选定正确的主题版本，避免深色用户看到空白卡片
+				(function () {
+					var art = document.getElementById("signatureArt");
+					if (!art) return;
+					if (document.documentElement.dataset.theme === "Dark") {
+						art.src = "./static/svg/muyudada-logo.svg";
+					}
+				})();
+			</script>
 			<div class="left-div left-des">
 				<div class="left-des-item">
 					<i class="fa-solid fa-location-arrow"></i>中国-河北
@@ -552,11 +563,35 @@
 			<span class="footer-sep" aria-hidden="true"></span>
 			<span class="footer-runtime" title="网站运行时间">
 				<span class="footer-runtime-dot" aria-hidden="true"></span>
-				本站已运行
+				<span class="footer-runtime-label">本站已运行</span>
 				<span id="site-runtime" class="footer-runtime-time">-- 天 -- 时 -- 分 -- 秒</span>
 			</span>
 			<span class="footer-sep" aria-hidden="true"></span>
-			<a href="https://icp.gov.moe/?keyword=20266619" target="_blank"><img src="https://icp.gov.moe/images/gov.svg" alt="ICP Logo" style="width: 14px; height: 14px; margin-right: 5px;">萌ICP备20266619号</a>
+			<a class="footer-stats" id="footer-stats" href="https://umami.muyudada.dpdns.org/share/KIcTyi9MIvrrFlYV"
+				target="_blank" rel="noopener" title="访问统计 · 点击查看详情"
+				data-umami-host="https://umami.muyudada.dpdns.org" data-umami-share="KIcTyi9MIvrrFlYV"
+				data-umami-website="6f19f691-3b58-431d-8bba-bacb6e1098ba">
+				<svg class="footer-stats-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+					<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"></path>
+					<circle cx="12" cy="12" r="3.2"></circle>
+				</svg>
+				<span class="footer-stats-group">
+					<span class="footer-stats-num" id="stats-views">–</span>
+					<span class="footer-stats-label">浏览</span>
+				</span>
+				<span class="footer-stats-divider" aria-hidden="true"></span>
+				<span class="footer-stats-group">
+					<span class="footer-stats-num" id="stats-visitors">–</span>
+					<span class="footer-stats-label">访客</span>
+				</span>
+			</a>
+			<span class="footer-sep" aria-hidden="true"></span>
+			<a class="footer-icp" href="https://icp.gov.moe/?keyword=20266619" target="_blank" rel="noopener"
+				title="萌 ICP 备 20266619 号">
+				<img class="footer-icp-logo" src="https://icp.gov.moe/images/gov.svg" alt="" aria-hidden="true"
+					loading="lazy" decoding="async">
+				<span class="footer-icp-text">萌ICP备20266619号</span>
+			</a>
 		</div>
 	</footer>
 	<div class="tc">
@@ -567,6 +602,8 @@
 	</div>
 </body>
 <script src="./static/js/script.js" defer></script>
+<!-- 页脚访问统计：读取 Umami 分享令牌后拉取总浏览 / 访客数 -->
+<script src="./static/js/umami-stats.js" defer></script>
 <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js" defer></script>
 <script>
 	// 统计脚本延迟到页面加载完成后初始化，不阻塞主流程

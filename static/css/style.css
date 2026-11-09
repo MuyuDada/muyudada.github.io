@@ -658,13 +658,21 @@ content {
     background: #06070b;
     box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     overflow: hidden;
-    /* 屏蔽签名视频上的所有交互事件（点击/触摸/右键/长按），事件穿透到下层 */
+    /* 屏蔽签名图上的所有交互事件（点击/触摸/右键/长按），事件穿透到下层 */
     pointer-events: none;
 }
 
-.signature-card video {
+/* 亮色主题：墨迹版签名线稿为深色，卡片底色改为浅色玻璃，避免深底吞掉笔画 */
+html[data-theme="Light"] .signature-card {
+    background: linear-gradient(155deg, #f9fcff 0%, #e9f0fb 100%);
+    box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.signature-art {
     display: block;
     width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
     border-radius: calc(var(--r-md) - 6px);
 }
 
@@ -2060,15 +2068,94 @@ footer {
     font-variant-numeric: tabular-nums;
 }
 
+/* ---- 页脚胶囊：访问统计 / 备案 ---- */
+.footer-stats,
 .footer-icp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border: 1px solid var(--card-border-soft);
+    border-radius: var(--r-pill);
+    background: var(--left_tag_item);
     color: var(--footer_text_color);
-    opacity: 0.75;
-    transition: color var(--dur-fast) ease, opacity var(--dur-fast) ease;
+    line-height: 18px;
+    text-decoration: none;
+    transition: color var(--dur-fast) ease, background var(--dur-fast) ease,
+        border-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
 }
 
+.footer-stats:hover,
 .footer-icp:hover {
+    color: var(--main_text_color);
+    background: var(--item_hover_color);
+    border-color: var(--card-border);
+    transform: translateY(-1px);
+}
+
+.footer-stats-icon {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.85;
+}
+
+.footer-stats-group {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+}
+
+.footer-stats-num {
     color: var(--purple_text_color);
-    opacity: 1;
+    font-family: var(--font-en);
+    font-size: 12.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.footer-stats-label {
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    opacity: 0.72;
+}
+
+.footer-stats-divider {
+    width: 1px;
+    height: 10px;
+    background: var(--hairline);
+}
+
+/* 接口失败时不留下残缺的占位符 */
+.footer-stats.is-error {
+    display: none;
+}
+
+.footer-icp {
+    padding-left: 7px;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+}
+
+.footer-icp-logo {
+    flex: none;
+    box-sizing: border-box;
+    width: 15px;
+    height: 15px;
+    padding: 1.5px;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(23, 43, 74, 0.18);
+}
+
+.footer-icp-text {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 /* --------------------------- 图片弹窗 --------------------------- */
@@ -2467,6 +2554,20 @@ footer {
     .footer-sep {
         display: none;
     }
+
+    .footer-stats,
+    .footer-icp {
+        gap: 5px;
+        padding: 2px 8px;
+    }
+
+    .footer-stats-num {
+        font-size: 12px;
+    }
+
+    .footer-stats-label {
+        font-size: 11px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -2480,6 +2581,28 @@ footer {
 
     .local-time {
         font-size: 28px;
+    }
+
+    /* 窄屏页脚：省掉"本站已运行"文字，让统计与备案能并排，避免页脚堆成四行 */
+    .footer-runtime-label {
+        display: none;
+    }
+
+    .footer-runtime {
+        gap: 4px;
+    }
+
+    .footer-runtime-time {
+        font-size: 11.5px;
+    }
+
+    .footer-stats-icon {
+        width: 13px;
+        height: 13px;
+    }
+
+    .footer-icp {
+        font-size: 11.5px;
     }
 }
 
