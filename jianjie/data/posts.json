@@ -1,9 +1,14 @@
 {
-  "generated": "2026-11-07T23:24:40",
+  "generated": "2026-11-11T00:25:09",
   "feed": "https://muyudada.dpdns.org/atom.xml",
   "home": "https://muyudada.dpdns.org/",
   "title": "Muyuの小窝",
   "items": [
+    {
+      "title": "把 Folia 搬上 Vercel：网页版也能跑洛雪自定义源脚本",
+      "url": "https://muyudada.dpdns.org/posts/folia-vercel-lx-source/",
+      "date": "2026-11-11T00:00:00.000Z"
+    },
     {
       "title": "给博客导航栏复刻 Apple 液态玻璃（Liquid Glass）",
       "url": "https://muyudada.dpdns.org/posts/liquid-glass-navbar/",
