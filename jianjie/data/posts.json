@@ -1,9 +1,24 @@
 {
-  "generated": "2026-11-11T00:25:09",
+  "generated": "2026-11-20T01:38:57",
   "feed": "https://muyudada.dpdns.org/atom.xml",
   "home": "https://muyudada.dpdns.org/",
   "title": "Muyuの小窝",
   "items": [
+    {
+      "title": "在 Astro 博客里实现 iOS 实况照片，顺手把动态图片墙改成九宫格",
+      "url": "https://muyudada.dpdns.org/posts/astro-live-photo-and-gallery/",
+      "date": "2026-11-19T00:00:00.000Z"
+    },
+    {
+      "title": "Astro 里动态插入的 DOM，为什么一条样式都吃不到",
+      "url": "https://muyudada.dpdns.org/posts/astro-scoped-css-pitfall/",
+      "date": "2026-11-19T00:00:00.000Z"
+    },
+    {
+      "title": "把 Firefly 博客接上可视化后台：Cloudflare Pages 部署与适配实录",
+      "url": "https://muyudada.dpdns.org/posts/firefly-cms-admin-deploy/",
+      "date": "2026-11-18T00:00:00.000Z"
+    },
     {
       "title": "把 Folia 搬上 Vercel：网页版也能跑洛雪自定义源脚本",
       "url": "https://muyudada.dpdns.org/posts/folia-vercel-lx-source/",
